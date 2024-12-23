@@ -5,13 +5,14 @@ export class UnitOfWork {
   private session: ClientSession | null = null;
   private repositories: Repository<any>[] = [];
   // Bắt đầu một transaction mới
-  public async start(): Promise<void> {
+  public async start(): Promise<ClientSession> {
     console.log("Starting transaction...");
     if (this.session) {
       throw new Error("Transaction already started");
     }
     this.session = await mongoose.startSession();
     this.session.startTransaction();
+    return this.session; 
   }
 
   // Thêm repository vào UnitOfWork

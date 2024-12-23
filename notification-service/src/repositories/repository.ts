@@ -9,18 +9,18 @@ export class Repository<T extends Document> {
   }
 
   async getAll(): Promise<T[]> {
-    return this.model.find().session(this.session).exec();
+    const data = await this.model.find().session(this.session).exec();
+    return data.map(item => item.toObject()) as T[];
   }
 
   async getById(id: string): Promise<T | null> {
     return this.model.findById(id).session(this.session).exec();
   }
 
-  async create(data: Partial<T>): Promise<T> {
+  async create(data: Partial<T>, session?: ClientSession): Promise<T> {
     const entity = new this.model(data);
-    return entity.save({ session: this.session });
+    return await entity.save({ session });
   }
-
   async update(id: string, data: Partial<T>): Promise<T | null> {
     return this.model
       .findByIdAndUpdate(id, data, { new: true, session: this.session })

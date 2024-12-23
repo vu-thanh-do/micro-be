@@ -16,9 +16,11 @@ export class NotificationService {
     return this.notiRepository.getById(id);
   }
 
-  async createNoti(data: Partial<INoti>, uow: UnitOfWork): Promise<INoti> {
-    const notificationRepo = uow.registerRepository(Notification);
-    return notificationRepo.create(data);
+  async createNoti(data: Partial<INoti>, uow: UnitOfWork , sessionStart :any) : Promise<INoti> {
+    console.log(sessionStart,'sessionStart')
+    const notificationRepo =  uow.registerRepository(Notification);
+    const dataReturn =  notificationRepo.create(data,sessionStart);
+    return dataReturn;
   }
 
   async updateNoti(
