@@ -1,7 +1,6 @@
 # compiled output
 /dist
 /node_modules
-
 # Logs
 logs
 *.log
@@ -10,7 +9,9 @@ pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
-
+*.tmp, *.swp, *.bak, *.suo, *.user, *.obj, *.pdb.
+bin/
+**/obj/
 # OS
 .DS_Store
 
