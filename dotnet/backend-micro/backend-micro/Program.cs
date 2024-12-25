@@ -1,7 +1,33 @@
+
+using backend_micro.DTO;
+using RabbitMQ.Client;
 using recruitment.Infrastructure.Extension;
 using recruitment.Services.Extension;
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+var rabbitMQConfig = builder.Configuration.GetSection("RabbitMQ").Get<RabbitMQConfig>();
+
+builder.Services.AddSingleton(rabbitMQConfig);
+
+builder.Services.AddSingleton<IConnectionFactory>(_ => new ConnectionFactory
+{
+    HostName = rabbitMQConfig.HostName,
+    UserName = rabbitMQConfig.UserName,
+    Password = rabbitMQConfig.Password
+});
+builder.Services.AddSingleton<IConnection>(sp =>
+{
+    var factory = sp.GetRequiredService<IConnectionFactory>();
+    return factory.CreateConnection();
+});
+
+builder.Services.AddSingleton<IModel>(sp =>
+{
+    var connection = sp.GetRequiredService<IConnection>();
+    return connection.CreateModel();
+});
 // Add services to the container.
 builder.Services.AddCors(options =>
 {
