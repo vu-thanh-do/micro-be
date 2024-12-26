@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using backend_micro.RabbitMQ;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using recruitment.Services.Interfaces;
@@ -11,9 +12,12 @@ namespace backend_micro.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IUsersService _userService;
-        public UsersController(IUsersService userService)
+        private readonly RabbitMQService _rabbitMQService;
+
+        public UsersController(IUsersService userService, RabbitMQService rabbitMQService)
         {
             _userService = userService;
+            _rabbitMQService = rabbitMQService;
         }
         [HttpGet]
         public async Task<IActionResult> Get()
@@ -21,7 +25,23 @@ namespace backend_micro.Controllers
             try
             {
                 var agv = await _userService.GetAll();
+                _rabbitMQService.SendMessage("Hello, RabbitMQ!");
+
                 return Ok(agv);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpPost]
+        public async Task<IActionResult> CreateUser()
+        {
+            try
+            {
+                var agv = await _userService.GetAll();
+                _rabbitMQService.SendMessage("Hello, RabbitMQ!");
+                return Ok("ok");
             }
             catch (Exception ex)
             {

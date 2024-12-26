@@ -9,5 +9,6 @@ namespace recruitment.Services.Interfaces
 {
     public interface IUsersService : IGenericService<Users>
     {
+
     }
 }

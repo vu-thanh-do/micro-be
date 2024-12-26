@@ -11,5 +11,8 @@ namespace recruitment.Services.Interfaces
     {
         Task<bool> Create(T model);
         Task<IEnumerable<T>> GetAll();
+        IEnumerable<T> Get(Expression<Func<T, bool>> filter = null,
+       Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+       string includeProperties = "");
     }
 }

@@ -12,6 +12,7 @@ namespace recruitment.Core.Models
         [Key]
         public Guid UserId { get; set; }
         public string Avatar { get; set; }
+        public string Code { get; set; }
         public string Password { get; set; } 
         public string EmployeeCode { get; set; }
         public string Email { get; set; }

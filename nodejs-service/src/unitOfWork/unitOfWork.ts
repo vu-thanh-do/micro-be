@@ -1,6 +1,7 @@
 import mongoose, { ClientSession, Document, Model } from "mongoose";
 import { Repository } from "../repositories/repository";
-
+import { injectable } from "inversify";
+@injectable()
 export class UnitOfWork {
   private session: ClientSession | null = null;
   private repositories: Repository<any>[] = [];

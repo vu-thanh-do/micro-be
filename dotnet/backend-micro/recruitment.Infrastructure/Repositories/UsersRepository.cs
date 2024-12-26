@@ -1,4 +1,5 @@
-﻿using recruitment.Core.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using recruitment.Core.Interfaces;
 using recruitment.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -14,5 +15,7 @@ namespace recruitment.Infrastructure.Repositories
         {
 
         }
+
+        
     }
 }

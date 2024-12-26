@@ -1,28 +1,36 @@
-import amqp from 'amqplib';
-
+import amqp from "amqplib";
+import ConsumerFactory from "../rabbitMQ/factories";
 async function connectRabbitMQ() {
   try {
-    const connection = await amqp.connect('amqp://admin:admin123@localhost'); // Kết nối đến RabbitMQ
+    const connection = await amqp.connect("amqp://admin:admin123@localhost"); // Kết nối đến RabbitMQ
     const channel = await connection.createChannel();
-
-    const queue = 'example_queue'; // Tên hàng đợi
-    await channel.assertQueue(queue); // Đảm bảo queue tồn tại
-
-    // Gửi message
-    const message = { task: 'save_to_db', data: { name: 'John Doe', age: 30 } };
-    channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
-    console.log(`Message sent: ${JSON.stringify(message)}`);
-    // Nhận message
-    channel.consume(queue, (msg) => {
-      if (msg !== null) {
-        const receivedData = JSON.parse(msg.content.toString());
-        console.log(`Message received: ${JSON.stringify(receivedData)}`);
-        channel.ack(msg); // Xác nhận đã xử lý xong message
-      }
-    });
+    const queues: string[] = ["user_queue", "noti_queue" ,"logger_queue"]; // định nghĩa queue
+    // Đảm bảo rằng mỗi queue tồn tại
+    for (const queue of queues) {
+      await channel.assertQueue(queue); // Assert cho từng queue
+    }
+    // Lắng nghe và xử lý message từ mỗi queue
+    for (const queue of queues) {
+      channel.consume(queue, (msg) => {
+        if (msg !== null) {
+          const receivedData = msg.content.toString();
+          console.log(`Message received: ${receivedData}`);
+          try {
+            // Tạo consumer từ factory dựa trên tên queue
+            const consumer = ConsumerFactory.createConsumer(queue);
+            consumer.consume(receivedData); // Tiến hành xử lý message
+            channel.ack(msg); // Xác nhận đã xử lý xong message
+          } catch (error) {
+            console.error("Error processing message:", error);
+            channel.nack(msg); // Xác nhận không xử lý được message
+          }
+        }
+      });
+    }
+    return { connection, channel };
   } catch (error) {
-    console.error('Error connecting to RabbitMQ:', error);
+    console.error("Error connecting to RabbitMQ:", error);
   }
 }
 
-export default connectRabbitMQ
+export default connectRabbitMQ;
