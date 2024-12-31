@@ -12,6 +12,13 @@ services:
     networks:
       - rabbitmq_network
 
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"  # Cổng mặc định của Redis
+    networks:
+      - rabbitmq_network
 networks:
   rabbitmq_network:
     driver: bridge

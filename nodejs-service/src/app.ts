@@ -3,8 +3,8 @@ import connectDb from "./config/db";
 import { createExpressServer, useExpressServer } from "routing-controllers";
 import NotificationController from "./controllers/noti/notification.controller";
 import "reflect-metadata";
-import connectRabbitMQ from "./config/rabbitmq";
 import LoggerController from "./controllers/logs/logs.controller";
+import connectRabbitMQ from "./config/RabbitMQ";
 
 const app = createExpressServer({
   controllers: [NotificationController,LoggerController],
