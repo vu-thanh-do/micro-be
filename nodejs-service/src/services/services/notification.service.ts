@@ -1,5 +1,5 @@
 import { INoti } from "../../types/noti.type";
-import Notification from "../../models/notification.model";
+import Notification from "../../models/models-project/notification.model";
 import { NotiRepository } from "../../repositories/noti.repository";
 import { UnitOfWork } from "../../unitOfWork/unitOfWork";
 import { GenericService } from "./generic.service";

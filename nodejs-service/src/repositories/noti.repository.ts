@@ -1,4 +1,4 @@
-import Notification from "../models/notification.model";
+import Notification from "../models/models-project/notification.model";
 import { INoti } from "../types/noti.type";
 import { Repository } from "./repository";
 

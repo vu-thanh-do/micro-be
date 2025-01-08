@@ -37,6 +37,11 @@ namespace recruitment.Infrastructure
             AddTimestamps();
             return base.SaveChanges();
         }
-       public DbSet<Users> Users { get; set; }
+        public DbSet<Users> Users { get; set; }
+        public DbSet<MasterData> MasterData { get; set; }
+        public DbSet<ApprovalHistory> ApprovalHistory { get; set; }
+        public DbSet<RequestRecruitment> RequestRecruitment { get; set; }
+        public DbSet<Role> Role { get; set; }
+        public DbSet<SystemConfig> SystemConfig { get; set; }
     }
 }

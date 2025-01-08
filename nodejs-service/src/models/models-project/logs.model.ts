@@ -1,6 +1,6 @@
 import mongoose, { Model } from "mongoose";
-import { INoti } from "../types/noti.type";
-import { ILogger } from "../types/logs.type";
+import { INoti } from "../../types/noti.type";
+import { ILogger } from "../../types/logs.type";
 import mongoosePaginate from "mongoose-paginate-v2";
 
 const LogsSchema = new mongoose.Schema(

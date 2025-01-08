@@ -1,8 +1,7 @@
-import HttpError from "../../errors/httpError";
-import { INoti } from "../../types/noti.type";
-import Notification from "../../models/notification.model";
-import { NotificationService } from "../../services/services/notification.service";
-import { UnitOfWork } from "../../unitOfWork/unitOfWork";
+import HttpError from "../../../errors/httpError";
+import { INoti } from "../../../types/noti.type";
+import { NotificationService } from "../../../services/services/notification.service";
+import { UnitOfWork } from "../../../unitOfWork/unitOfWork";
 import express, { Request, Response } from "express";
 import {
   Body,
@@ -59,7 +58,6 @@ class NotificationController {
   @Get("/")
   @HttpCode(200)
   async getNoti(@Req() request: Request, @Res() response: Response) {
-    console.log(`object`);
     const dataNoti = await this.notiService.getAll();
     return response.send(dataNoti);
   }
