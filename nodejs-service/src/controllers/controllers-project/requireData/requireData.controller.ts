@@ -22,7 +22,7 @@ class RequireDataController {
   async getAllRequireData(@Req() request: Request, @Res() response: Response) {
     try {
     const a = new DepartmentEzV4()
-     const b = a.getAllDepartmenrtEzv4()
+     const b = await a.getAllDepartmenrtEzv4()
       console.log(b )
       return response.send("ok");
     } catch (error: any) {

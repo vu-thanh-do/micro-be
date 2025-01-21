@@ -8,6 +8,7 @@ const CodeApprovalSchema = new mongoose.Schema(
     },
     code: {
       type: String,
+      unique: true,
     },
     status: {
       type: String,

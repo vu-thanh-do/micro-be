@@ -47,6 +47,7 @@ class CodeApprovalController {
       if (!sessionStart) {
         throw new Error("Session failed to start");
       }
+      console.log(data,'data');
       const dataCodeApproval = await this.codeApprovalService.create(
         data,
         this.uow,

@@ -15,9 +15,19 @@ import dotenv from "dotenv";
 import { ConnectSqlServer } from "./config/ezV4Db";
 import NotificationController from "./controllers/controllers-project/noti/notification.controller";
 import FormTemplateController from "./controllers/controllers-project/formTemplate/formTemplate.controller";
+import cors from 'cors';
 
 useContainer(container);
 const app = createExpressServer({
+  cors: {
+    origin: [
+      "http://localhost:3002",
+      "http://localhost:4200",
+      "http://localhost:4200/",
+      "http://localhost:3002/",
+    ],
+    credentials: true,
+  },
   controllers: [
     NotificationController,
     LoggerController,
@@ -26,8 +36,9 @@ const app = createExpressServer({
     FormTemplateController,
   ],
 });
-app.use(express.json());
+
 dotenv.config();
+app.use(express.json());
 connectRabbitMQ();
 connectDb();
 ConnectSqlServer();

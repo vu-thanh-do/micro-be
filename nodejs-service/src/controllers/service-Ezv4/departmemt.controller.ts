@@ -1,11 +1,15 @@
-import Department from "../../models/models-EzV4/department.model";
+import Employee from "../../models/models-EzV4/department.model";
 
 class DepartmentEzV4 {
   async getAllDepartmenrtEzv4() {
     try {
-      return await Department.findAll();
+      const employees = await Employee.findAll({
+        attributes: ["ID", "FullName", "Email", "JoinDate", "PhoneNumber"],
+      });
+      console.log(employees);
+      return employees
     } catch (error) {
-      throw error;
+      return error;
     }
   }
 }

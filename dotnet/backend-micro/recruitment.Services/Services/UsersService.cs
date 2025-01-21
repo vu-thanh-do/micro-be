@@ -1,13 +1,9 @@
-﻿using recruitment.Core.Interfaces;
+﻿using Microsoft.AspNetCore.Identity;
+using recruitment.Core.Interfaces;
 using recruitment.Core.Models;
 using recruitment.Infrastructure;
 using recruitment.Services.Interfaces;
 using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace recruitment.Services.Services
 {
@@ -15,29 +11,24 @@ namespace recruitment.Services.Services
     {
         public IUnitOfWork _unitOfWork;
         private readonly DbContextClass _context;
+        private readonly PasswordHasher<Users> _passwordHasher;
+
         public UsersService(IUnitOfWork unitOfWork, DbContextClass context) : base(unitOfWork)
         {
             _context = context;
             _unitOfWork = unitOfWork;
+            _passwordHasher = new PasswordHasher<Users>();
         }
-        public Task<bool> Create(Users model)
-        {
-            throw new NotImplementedException();
-        }
-        public async Task<IEnumerable<Users>> GetAll()
-        {
-            try
-            {
-                var UserData = await _unitOfWork.GetRepository<Users>().GetAll();
-                return UserData;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error retrieving users: {ex.Message}");
-                return Enumerable.Empty<Users>();
-            }
-        }
-       
 
+        public string HashPassword(Users user, string password)
+        {
+            return _passwordHasher.HashPassword(user, password);
+        }
+
+        public bool VerifyPassword(Users user, string password)
+        {
+            var result = _passwordHasher.VerifyHashedPassword(user, user.Password, password);
+            return result == PasswordVerificationResult.Success;
+        }
     }
 }

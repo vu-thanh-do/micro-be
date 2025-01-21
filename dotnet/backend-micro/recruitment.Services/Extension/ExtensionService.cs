@@ -15,6 +15,7 @@ namespace recruitment.Services.Extension
         public static IServiceCollection AddDIServices (this IServiceCollection services, IConfiguration configuration)
         {
             services.AddScoped<IUsersService, UsersService>();
+            services.AddScoped<ITokenService, TokenService>();
             return services;
         }
     }

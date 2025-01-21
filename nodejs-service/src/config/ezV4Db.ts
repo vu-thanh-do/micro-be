@@ -9,9 +9,9 @@ const sqlConfig = {
   options: {
     encrypt: true, //
     trustServerCertificate: true, //
-    Trusted_Connection: false,
+    Trusted_Connection: true,
     MultipleActiveResultSets: true,
-    TrustServerCertificate: true,
+    enableArithAbort: true
   },
 } as any;
 const ConnectSqlServer = async () => {
@@ -28,6 +28,10 @@ const sequelizeSql = new Sequelize({
   username: process.env.USERNAME_SQL,
   password: process.env.PASSWORD_SQL,
   database: process.env.NAME_DB_SQL,
+  dialectOptions: {
+    encrypt: false, // Đảm bảo sử dụng mã hóa
+    trustServerCertificate: true, // Chấp nhận chứng chỉ không hợp lệ nếu cần
+  },
 });
 
 export { ConnectSqlServer, sequelizeSql };

@@ -9,6 +9,8 @@ import { RequireDataService } from "../services/services/requireData.service";
 import RequireDataController from "../controllers/controllers-project/requireData/requireData.controller";
 import { FormTemplateService } from "../services/services/formTemplate.service";
 import FormTemplateController from "../controllers/controllers-project/formTemplate/formTemplate.controller";
+import NotificationController from "../controllers/controllers-project/noti/notification.controller";
+import LoggerController from "../controllers/controllers-project/logs/logs.controller";
 
 const container = new Container();
 // Bind dependencies
@@ -25,5 +27,7 @@ container.bind<UnitOfWork>(UnitOfWork).toSelf();
 container.bind<CodeApprovalController>(CodeApprovalController).toSelf();
 container.bind<RequireDataController>(RequireDataController).toSelf();
 container.bind<FormTemplateController>(FormTemplateController).toSelf();
+container.bind<NotificationController>(NotificationController).toSelf();
+container.bind<LoggerController>(LoggerController).toSelf();
 
 export default container;
