@@ -42,7 +42,7 @@ namespace backend_micro.Controllers
             try
             {
                 var user =  _userService
-                           .Get(u => u.Code == model.Code).FirstOrDefault(); // Đừng quên async/await
+                           .Get(u => u.Code == model.Code).FirstOrDefault(); // Đừng quên 
                 if (user == null) // login ad and resigter
                 {
                     var apiUrl = _config["ApiUrl:LoginAd"];
@@ -72,9 +72,7 @@ namespace backend_micro.Controllers
                             RoleId = Guid.Parse("EBCCA355-545D-4225-8D41-1950E7AB18B1"),
                         };
                         _userService.Create(userData);
-                      
                         var accessToken = _tokenService.GenerateToken(userData);
-                        
                         return Ok(
                           userData
                         );
