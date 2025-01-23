@@ -14,7 +14,6 @@ namespace recruitment.Services.Services
     public class GenericService<TEntity> : IGenericService<TEntity> where TEntity : class
     {
         public readonly IUnitOfWork _unitOfWork;
-
         public GenericService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
@@ -23,7 +22,6 @@ namespace recruitment.Services.Services
         {
             throw new NotImplementedException();
         }
-
         public IEnumerable<TEntity> Get(Expression<Func<TEntity, bool>> filter = null,
          Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
          string includeProperties = "")
