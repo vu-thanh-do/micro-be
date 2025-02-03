@@ -1,5 +1,5 @@
 import express from "express";
-import connectDb from "./config/db";
+import connectDb from "./config/dbMongo";
 import {
   createExpressServer,
   useContainer,
@@ -16,6 +16,7 @@ import { ConnectSqlServer } from "./config/ezV4Db";
 import NotificationController from "./controllers/controllers-project/noti/notification.controller";
 import FormTemplateController from "./controllers/controllers-project/formTemplate/formTemplate.controller";
 import cors from 'cors';
+import connectRedis from "./config/redisDB";
 
 useContainer(container);
 const app = createExpressServer({
@@ -42,4 +43,5 @@ app.use(express.json());
 connectRabbitMQ();
 connectDb();
 ConnectSqlServer();
+const redis = connectRedis();
 export default app;

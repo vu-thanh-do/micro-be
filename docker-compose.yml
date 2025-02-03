@@ -17,6 +17,7 @@ services:
     container_name: redis
     ports:
       - "6379:6379"  # Cổng mặc định của Redis
+    command: ["redis-server", "--requirepass", "1234qwer!"]
     networks:
       - rabbitmq_network
 networks:

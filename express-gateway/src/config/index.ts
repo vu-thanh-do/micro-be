@@ -6,5 +6,6 @@ export const config = {
   services: {
     serviceA: process.env.SERVICE_A_URL || "http://localhost:4001",
     serviceB: process.env.SERVICE_B_URL || "http://localhost:4002",
+    fileService: process.env.SERVICE_FILE_URL
   },
 };
