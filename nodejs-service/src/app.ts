@@ -17,6 +17,7 @@ import NotificationController from "./controllers/controllers-project/noti/notif
 import FormTemplateController from "./controllers/controllers-project/formTemplate/formTemplate.controller";
 import cors from 'cors';
 import connectRedis from "./config/redisDB";
+import HeadCountPlanController from "./controllers/controllers-project/headCountPlan/headCountPlan.controller";
 
 useContainer(container);
 const app = createExpressServer({
@@ -35,6 +36,7 @@ const app = createExpressServer({
     CodeApprovalController,
     RequireDataController,
     FormTemplateController,
+    HeadCountPlanController
   ],
 });
 

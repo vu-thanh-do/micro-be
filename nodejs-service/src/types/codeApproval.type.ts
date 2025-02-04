@@ -6,3 +6,6 @@ export interface ICodeApproval extends Document {
   status: String;
   index: Number;
 }
+export interface IUpdateCodeApproval extends Document {
+  status: String;
+}

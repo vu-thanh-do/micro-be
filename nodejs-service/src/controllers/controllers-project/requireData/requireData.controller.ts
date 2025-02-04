@@ -3,7 +3,7 @@ import { RequireDataService } from "../../../services/services/requireData.servi
 import { UnitOfWork } from "../../../unitOfWork/unitOfWork";
 import { inject } from "inversify";
 import { Request, Response } from "express";
-import DepartmentEzV4 from "../../service-Ezv4/departmemt.controller";
+import DepartmentEzV4 from "../../../services/service-Ezv4/department";
 import { sequelizeSql } from "../../../config/ezV4Db";
 
 @JsonController("/requireData")
@@ -24,7 +24,7 @@ class RequireDataController {
     const a = new DepartmentEzV4()
      const b = await a.getAllDepartmenrtEzv4()
       console.log(b )
-      return response.send("ok");
+      return response.send(b);
     } catch (error: any) {
       return response.status(400).send({
         error: error.message,

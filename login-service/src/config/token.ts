@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 dotenv.config();
 interface IUser {
-    UserId: string;
+  UserId: string;
   username: string;
   role: string;
 }
