@@ -1,5 +1,6 @@
 import { injectable } from "inversify";
 import { sequelizeSql } from "../../config/ezV4Db";
+import { QueryTypes } from "sequelize";
 @injectable()
 class DepartmentEzV4 {
   async getAllDepartmenrtEzv4() {
@@ -14,12 +15,14 @@ class DepartmentEzV4 {
   }
   async getNameById(id: string) {
     try {
-      const [name, metadata] = await sequelizeSql.query(
-        "SELECT * FROM tbMD_CompanyStructure where ID = :id"
+      const [results] = await sequelizeSql.query(
+        "SELECT * FROM tbMD_CompanyStructure WHERE ID = :id",
+        { replacements: { id }, type: QueryTypes.SELECT }
       );
-      return name;
+      return results;
     } catch (error) {
-      return error;
+      console.error("Error in getNameById:", error);
+      throw new Error("Database query failed");
     }
   }
 }

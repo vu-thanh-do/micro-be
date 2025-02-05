@@ -5,12 +5,14 @@ dotenv.config();
 class Http {
   instance: AxiosInstance;
   constructor(baseURL: string) {
+    console.log(baseURL,'baseURL')
     this.instance = axios.create({
       baseURL,
       timeout: 10000,
       headers: {
         "Content-Type": "application/json",
       },
+      withCredentials: true, 
     });
   }
 }

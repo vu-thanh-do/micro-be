@@ -14,6 +14,8 @@ import LoggerController from "../controllers/controllers-project/logs/logs.contr
 import { ResponseDataService } from "../services/services/response.service";
 import { HeadCountRecruitEzV4 } from "../services/service-Ezv4/headcountDep";
 import HeadCountPlanController from "../controllers/controllers-project/headCountPlan/headCountPlan.controller";
+import { InfoUserEzV4 } from "../services/service-Ezv4/infoUserEzV4";
+import DepartmentEzV4 from "../services/service-Ezv4/department";
 
 const container = new Container();
 // Bind dependencies
@@ -26,6 +28,8 @@ container.bind<NotificationService>(NotificationService).toSelf();
 container.bind<UnitOfWork>(UnitOfWork).toSelf();
 container.bind<ResponseDataService>(ResponseDataService).toSelf();
 container.bind<HeadCountRecruitEzV4>(HeadCountRecruitEzV4).toSelf();
+container.bind<InfoUserEzV4>(InfoUserEzV4).toSelf();
+container.bind<DepartmentEzV4>(DepartmentEzV4).toSelf();
 
 
 // bind controlelr
