@@ -16,6 +16,8 @@ import { HeadCountRecruitEzV4 } from "../services/service-Ezv4/headcountDep";
 import HeadCountPlanController from "../controllers/controllers-project/headCountPlan/headCountPlan.controller";
 import { InfoUserEzV4 } from "../services/service-Ezv4/infoUserEzV4";
 import DepartmentEzV4 from "../services/service-Ezv4/department";
+import { LanguageService } from "../services/services/language.service";
+import LanguageController from "../controllers/controllers-project/language/language.controller";
 
 const container = new Container();
 // Bind dependencies
@@ -30,6 +32,7 @@ container.bind<ResponseDataService>(ResponseDataService).toSelf();
 container.bind<HeadCountRecruitEzV4>(HeadCountRecruitEzV4).toSelf();
 container.bind<InfoUserEzV4>(InfoUserEzV4).toSelf();
 container.bind<DepartmentEzV4>(DepartmentEzV4).toSelf();
+container.bind<LanguageService>(LanguageService).toSelf();
 
 
 // bind controlelr
@@ -39,5 +42,6 @@ container.bind<FormTemplateController>(FormTemplateController).toSelf();
 container.bind<NotificationController>(NotificationController).toSelf();
 container.bind<LoggerController>(LoggerController).toSelf();
 container.bind<HeadCountPlanController>(HeadCountPlanController).toSelf();
+container.bind<LanguageController>(LanguageController).toSelf();
 
 export default container;

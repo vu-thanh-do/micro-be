@@ -47,6 +47,6 @@ export class GenericService<T extends Document> implements IGenericService<T> {
     }
   }
   async delete(id: string): Promise<boolean> {
-    return this.repository.deleteById(id);
+    return this.repository.findByIdAndDelete(id);
   }
 }

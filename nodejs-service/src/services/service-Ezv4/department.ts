@@ -13,7 +13,7 @@ class DepartmentEzV4 {
       return error;
     }
   }
-  async getNameById(id: string) {
+  async getNameById(id: number) {
     try {
       const [results] = await sequelizeSql.query(
         "SELECT * FROM tbMD_CompanyStructure WHERE ID = :id",

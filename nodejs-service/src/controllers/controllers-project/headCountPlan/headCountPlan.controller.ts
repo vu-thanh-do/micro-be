@@ -12,6 +12,7 @@ import { Request, Response } from "express";
 import { ResponseDataService } from "../../../services/services/response.service";
 import { InfoUserEzV4 } from "../../../services/service-Ezv4/infoUserEzV4";
 import DepartmentEzV4 from "../../../services/service-Ezv4/department";
+import { IDataHeadCount, INameDep } from "../../../types/headCount.type";
 
 @JsonController("/headCountPlan")
 class HeadCountPlanController {
@@ -39,24 +40,35 @@ class HeadCountPlanController {
         year: string;
         department: string | null;
       };
-
       const dataInfoUser = await this.infoUserEzV4.getInfoUserFromCode(code);
       if (dataInfoUser.status_code == 200 && dataInfoUser.data[0].divisionId) {
-        console.log(dataInfoUser, "dataInfoUser");
-        // const newData = {
-        //   employeeId: dataInfoUser.data.result.employeeId,
-        //   departmentId: dataInfoUser.data.result.departmentId,
-        //   divisionId: dataInfoUser.data.result.divisionId,
-        //   sectionId: dataInfoUser.data.result.sectionId,
-        //   groupId: dataInfoUser.data.result.groupId,
-        // };
-        const data = await this.headCountRecruitEzV4.getHeadCountByDiv(
+        const data = (await this.headCountRecruitEzV4.getHeadCountByDiv(
           dataInfoUser.data[0].divisionId,
           year,
           department
-        );
+        )) as IDataHeadCount[];
+        const departmentIds = data.map((d) => d.DepartmentID);
+        const divisionIds = data.map((d) => d.DivisionID);
+        const uniqueIds = [...new Set([...departmentIds, ...divisionIds])];
+        // vì bảng này đệ quy nên thêm id vào  1 mảng và  chỉ query 1 lần
+        const nameMap: Record<number, INameDep> = {};
+        for (const id of uniqueIds) {
+          const nameData = (await this.departmentEzV4.getNameById(
+            id
+          )) as INameDep;
+          nameMap[id] = nameData;
+        }
+        const infoNameDivAndDep = data.map((info) => ({
+          ...info,
+          DepartmentName: nameMap[info.DepartmentID]?.Name || null,
+          DivisionName: nameMap[info.DivisionID]?.Name || null,
+        }));
         return response.send(
-          this.responseDataService.createResponse(200, data, "success")
+          this.responseDataService.createResponse(
+            200,
+            infoNameDivAndDep,
+            "success"
+          )
         );
       } else {
         return response.send(

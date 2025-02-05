@@ -18,6 +18,9 @@ import FormTemplateController from "./controllers/controllers-project/formTempla
 import cors from 'cors';
 import connectRedis from "./config/redisDB";
 import HeadCountPlanController from "./controllers/controllers-project/headCountPlan/headCountPlan.controller";
+import MasterData from "./models/models-project/masterData.model";
+import Language from "./models/models-project/language.model";
+import LanguageController from "./controllers/controllers-project/language/language.controller";
 
 useContainer(container);
 const app = createExpressServer({
@@ -36,7 +39,8 @@ const app = createExpressServer({
     CodeApprovalController,
     RequireDataController,
     FormTemplateController,
-    HeadCountPlanController
+    HeadCountPlanController,
+    LanguageController
   ],
 });
 
