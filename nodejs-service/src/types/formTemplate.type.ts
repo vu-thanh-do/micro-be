@@ -1,9 +1,11 @@
 import { Document } from "mongoose";
 
 export interface IFormTemplate extends Document {
-  name: String;
+  nameForm: String;
   typeForm: String;
-  dataForm: String[];
-  approval: String[];
+  fields: any[];
+  codeApproval: String[];
   status: String;
+  version: String;
+  dateApply:Date
 }

@@ -9,7 +9,6 @@ const LanguageSchema = new mongoose.Schema(
     group: {
       type: String,
       required: true,
-      unique: true,
       index: true,
     },
     key: {

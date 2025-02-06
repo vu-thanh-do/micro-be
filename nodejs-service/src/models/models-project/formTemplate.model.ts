@@ -5,19 +5,20 @@ import { IFormTemplate } from "../../types/formTemplate.type";
 
 const FormTemplateSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
+    nameForm: {
+      type: Object,
     },
     typeForm: {
       type: String,
     },
-    dataForm: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "RequireData",
-      },
-    ],
-    approval: [
+    version: {
+      type: String,
+    },
+    dateApply: {
+      type: Date,
+    },
+    fields: [],
+    codeApproval: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "CodeApproval",

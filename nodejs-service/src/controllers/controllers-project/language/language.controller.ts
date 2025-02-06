@@ -55,7 +55,7 @@ class LanguageController {
       };
       const dataLogs = await this.languageService.getAllGroup(options);
       return response.send(
-        this.responseDataService.createResponse(200, dataLogs, "error")
+        this.responseDataService.createResponse(200, dataLogs, "success")
       );
     } catch (error) {
       return response.send(
@@ -105,7 +105,11 @@ class LanguageController {
       console.error("Error occurred, rolling back", error);
       await this.uow.rollback(); // Rollback transaction nếu có lỗi
       console.error("roll back ok");
-      throw new HttpError(error.message, 500);
+      // throw new HttpError(error.message, 500);
+
+      return response.send({
+        error: error.message
+      })
     }
   }
   @Put("/update/:id")

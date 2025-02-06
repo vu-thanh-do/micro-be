@@ -14,9 +14,9 @@ export class GenericService<T extends Document> implements IGenericService<T> {
       const repo = uow.registerRepository(this.repository);
       const result = await repo.create(model, sessionStart);
       return result as T;
-    } catch (error) {
+    } catch (error :any) {
       console.error("Error creating document:", error);
-      throw new Error("Error creating document");
+      throw new Error(error.message || "Error creating document");
     }
   }
   async getAll(): Promise<T[]> {
