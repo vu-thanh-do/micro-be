@@ -15,7 +15,7 @@ export class LanguageService extends GenericService<ILanguage> {
   async getAllGroup(options: any) {
     try {
       let query;
-      console.log(options,'options')
+      console.log(options, "options");
       const newOption = {
         sort: { createdAt: -1 },
         page: options.page,
@@ -42,7 +42,7 @@ export class LanguageService extends GenericService<ILanguage> {
             {
               $or: [
                 {
-                    [`message.${options.language}`]: {
+                  [`message.${options.language}`]: {
                     $regex: options.group,
                     $options: "i",
                   },
@@ -67,7 +67,7 @@ export class LanguageService extends GenericService<ILanguage> {
             {
               $or: [
                 {
-                    [`message.${options.language}`]: {
+                  [`message.${options.language}`]: {
                     $regex: options.group,
                     $options: "i",
                   },
@@ -80,8 +80,23 @@ export class LanguageService extends GenericService<ILanguage> {
       const language = await (Language as any).paginate(query, newOption);
       return language;
     } catch (error) {
-        console.log(error,'error')
-      return error
+      console.log(error, "error");
+      return error;
+    }
+  }
+  async getGroup() {
+    try {
+      const groups = await Language.aggregate([
+        { $match: { group: { $ne: null, $exists: true } } },
+        { $group: { _id: "$group", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $project: { nameGroup: "$_id", count: 1, _id: 0 } }, 
+      ]);
+
+      return groups;
+    } catch (error) {
+      console.log(error, "error");
+      return error;
     }
   }
 }

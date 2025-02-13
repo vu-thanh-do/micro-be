@@ -63,6 +63,14 @@ class LanguageController {
       );
     }
   }
+  @Get("/get-all-group")
+  @HttpCode(200)
+  async getAllGroup(@Req() request: Request, @Res() response: Response) {
+    const dataLanguage = await this.languageService.getGroup();
+    return response.send(
+      this.responseDataService.createResponse(200, dataLanguage, "success")
+    );
+  }
   @Get("/get-by-id/:id")
   @HttpCode(200)
   async getLanguageById(@Req() request: Request, @Res() response: Response) {

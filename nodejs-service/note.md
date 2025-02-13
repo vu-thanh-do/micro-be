@@ -23,6 +23,11 @@ select _ from tbMD_Direct_Indirect
 select _ from tbMD_GroupCode where [Group] = 'RCRTYP'
 -- Nghỉ việc
 select _ from tbHR_Resign
+
+
+
+
+
 var element = document.querySelector("body > w3m-modal").shadowRoot.querySelector("wui-flex > wui-card > w3m-router").shadowRoot.querySelector("div > w3m-unsupported-chain-view").shadowRoot.querySelector("wui-flex > wui-flex:nth-child(2) > wui-list-network").shadowRoot.querySelector("button")
 
 var elv2 = document.querySelector("body > w3m-modal").shadowRoot.querySelector("wui-flex > wui-card > w3m-router").shadowRoot.querySelector("div > w3m-connecting-siwe-view").shadowRoot.querySelector("wui-flex:nth-child(4) > wui-button:nth-child(2)")

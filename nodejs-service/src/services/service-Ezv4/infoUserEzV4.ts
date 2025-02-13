@@ -8,11 +8,12 @@ export class InfoUserEzV4 {
   getInfoUserFromCode = async (code: string) => {
     console.log(code)
     try {
-      const { data } = await apiGetInfoUserEzV4.post(`?employeeCode=${code}`);
+      const { data } = await apiGetInfoUserEzV4.post(`?employeeCode=${code}&includeResign=true`);
       return data;
     } catch (error) {
       console.error("Lỗi khi truy vấn dữ liệu:", error);
       return null;
     }
   };
+
 }
