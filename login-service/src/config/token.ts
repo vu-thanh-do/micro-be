@@ -10,7 +10,7 @@ export const generateToken = (user: IUser) => {
   return jwt.sign(
     { UserId: user.UserId, username: user.username, role: user.role },
     process.env.JWT_SECRET as string,
-    { expiresIn: "2m" }
+    { expiresIn: "3d" }
   );
 };
 
@@ -19,7 +19,7 @@ export const generateRefreshToken = (user: IUser) => {
     { UserId: user.UserId, username: user.username, role: user.role },
     process.env.SECRET_REFRESH as string,
     {
-      expiresIn: "10m",
+      expiresIn: "3d",
     }
   );
 };

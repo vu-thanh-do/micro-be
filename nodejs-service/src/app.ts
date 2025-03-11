@@ -33,6 +33,8 @@ const app = createExpressServer({
       "http://localhost:4200",
       "http://localhost:4200/",
       "http://localhost:3002/",
+      "http://10.73.131.60:5232",
+	    "http://10.73.131.60:5232/"
     ],
     credentials: true,
   },
