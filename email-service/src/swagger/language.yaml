@@ -1,0 +1,40 @@
+paths:
+  /language/language/getGroup:
+    get:
+      tags:
+        - Language
+      summary: Lấy nhóm ngôn ngữ
+      responses:
+        200:
+          description: Success
+
+  /language/language/getAllGroup:
+    get:
+      tags:
+        - Language
+      summary: Lấy tất cả nhóm ngôn ngữ
+      responses:
+        200:
+          description: Success
+
+  /language/language/create:
+    post:
+      tags:
+        - Language
+      summary: Tạo ngôn ngữ mới
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                code:
+                  type: string
+      responses:
+        201:
+          description: Created successfully

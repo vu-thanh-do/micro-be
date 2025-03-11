@@ -19,7 +19,6 @@ namespace recruitment.Core.Models
         public string Email { get; set; }
         public string Username { get; set; }
         public string RefreshToken { get; set; }
-        public string SecretKey { get; set; }
         public Guid RoleId { get; set; }
         [ForeignKey("RoleId")]
         public Role Role { get; set; }

@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { UserController } from "../controllers/user.controller";
+import { authMiddleware } from "../middleware/auth.middleware";
 const router = Router();
 router.get("/get-user-by-id/:id", UserController.getOneUser);
-router.get("/get-user-from-token/:token", UserController.getOneFromToken);
+router.get("/get-user-from-token",authMiddleware.verifyToken , UserController.getOneFromToken);
 router.get("/get-user-info-ezV4/:code", UserController.getInfoUserFromCode);
-
+router.get("/get-all-user", UserController.getAllUser);
 export default router;

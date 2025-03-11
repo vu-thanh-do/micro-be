@@ -1,0 +1,95 @@
+{
+    "positions": [
+        {
+            "recCode": "1",
+            "category": "2",
+            "quantityRec": "3",
+            "position": "Y2",
+            "grade": "Y3",
+            "reason": "newrecruit",
+            "workshift": "4",
+            "genderAge": "5",
+            "education": "6",
+            "experience": "7",
+            "language": "8",
+            "computer": "9",
+            "jobDescription": "C:\\fakepath\\apendix1.txt",
+            "replacements": []
+        },
+        {
+            "recCode": "10",
+            "category": "11",
+            "quantityRec": "12",
+            "position": "Y3",
+            "grade": "Y4",
+            "reason": "replacement",
+            "workshift": "15",
+            "genderAge": "16",
+            "education": "17",
+            "experience": "18",
+            "language": "19",
+            "computer": "20",
+            "jobDescription": "C:\\fakepath\\screencapture-localhost-3002-yeu-cau-tuyen-dung-cac-phong-ban-2025-03-05-14_15_04.png",
+            "replacements": [
+                {
+                    "ID": 786,
+                    "EmployeeCode": "0596",
+                    "FullName": "Tạ Thị Luyến",
+                    "ResignDate": "2024-10-08",
+                    "Position": "SVR (X1)",
+                    "Grade": "X1",
+                    "entryDate": "2004-11-26",
+                    "actualLeaveDate": "2024-10-08",
+                    "dataNameDiv": {
+                        "ID": 12,
+                        "Code": "MFG 2",
+                        "Name": "Manufacturing 2",
+                        "ParentID": 1,
+                        "ManagerID": null,
+                        "FlowPICID": null,
+                        "IsActive": true,
+                        "BranchID": 1,
+                        "OrderID": null
+                    },
+                    "dataNameDep": {
+                        "ID": 44,
+                        "Code": "Production I-1",
+                        "Name": "Production I-1",
+                        "ParentID": 12,
+                        "ManagerID": null,
+                        "FlowPICID": null,
+                        "IsActive": true,
+                        "BranchID": null,
+                        "OrderID": 0
+                    },
+                    "dataNameSec": null,
+                    "jobReplace": 2
+                }
+            ]
+        }
+    ],
+    "total": 15,
+    "hrAnswer": {
+        "dateOfAdoption": "",
+        "numberOfAdopt": "",
+        "comment": ""
+    },
+    "levelApproval": [
+        {
+            "Id": 1,
+            "level": 1,
+            "status": null,
+            "reasonReject": "",
+            "approveTime": "",
+            "codeUserApproval": "",
+            "EmployeeId": null,
+            "EmployeeName": null,
+            "IsSelected": null
+        }
+    ],
+    "status": "pending",
+    "RequesterName": null,
+    "RequesterCode": null,
+    "RequesterPosition": null,
+    "RequesterSection": null
+}

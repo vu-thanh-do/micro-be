@@ -26,7 +26,6 @@ const LanguageSchema = new mongoose.Schema(
     versionKey: false,
   }
 );
-
 LanguageSchema.plugin(mongoosePaginate);
 const Language: Model<ILanguage> = mongoose.model<ILanguage>(
   "Language",

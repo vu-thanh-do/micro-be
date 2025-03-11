@@ -12,6 +12,7 @@ using backend_micro.RabbitMQ.Producers;
 using System.Net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using backend_micro.Utils;
 
 namespace backend_micro.Controllers
 {
@@ -66,7 +67,6 @@ namespace backend_micro.Controllers
                             UserId = Guid.NewGuid(),
                             Email = jsonResponse["data"]["email"].ToString(),
                             Code = NewCode,
-                            SecretKey = "",
                             Username = jsonResponse["data"]["fullName"].ToString(),
                             Password = _userService.HashPassword(new Users(), model.Password),
                             RoleId = Guid.Parse("EBCCA355-545D-4225-8D41-1950E7AB18B1"),
@@ -125,6 +125,30 @@ namespace backend_micro.Controllers
             catch (Exception ex)
             {
                 return BadRequest(ex.InnerException?.Message ?? ex.Message);
+            }
+        }
+        [HttpGet("get-device-info")]
+        public IActionResult GetDeviceInfo()
+        {
+            try
+            {
+                string processorId = DeviceInfo.GetProcessorId();
+                return Ok(new
+                {
+                    Status = 200,
+                    Message = "Device info retrieved successfully.",
+                    ProcessorId = processorId
+                });
+            }
+            //BFEBFBFF000A0653
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    Status = 400,
+                    Message = "Failed to retrieve device info.",
+                    Error = ex.Message
+                });
             }
         }
     }

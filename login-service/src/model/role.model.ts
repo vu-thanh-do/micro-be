@@ -1,11 +1,32 @@
-import { DataTypes } from "sequelize";
+import { DataTypes, Model } from "sequelize";
 import { sequelizeSql } from "../config/db";
 
-const Role = sequelizeSql.define(
-  "Role",
+interface Permission {
+  PermissionName: string;
+  Actions: {
+    ActionName: string;
+    Route?: string;  // đường dẫn frontend nếu cần
+  }[];
+}
+
+interface RoleAttributes {
+  RoleId: string;
+  RoleName: string;
+  Permission: Permission[];
+  CreatedDate?: Date;
+}
+
+class Role extends Model<RoleAttributes> implements RoleAttributes {
+  public RoleId!: string;
+  public RoleName!: string;
+  public Permission!: Permission[];
+  public CreatedDate!: Date;
+}
+
+Role.init(
   {
     RoleId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       primaryKey: true,
       field: "RoleId",
     },
@@ -14,13 +35,28 @@ const Role = sequelizeSql.define(
       field: "RoleName",
     },
     Permission: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       field: "Permission",
+      get() { 
+        const rawValue = this.getDataValue('Permission') as unknown as string;
+        return rawValue ? JSON.parse(rawValue) as Permission[] : [];
+      },
+      set(value: Permission[]) {
+        this.setDataValue('Permission', JSON.stringify(value) as any);
+      }
     },
+    CreatedDate: {
+      type: DataTypes.DATE,
+      field: "CreatedDate"
+    }
   },
   {
     tableName: "Role",
     timestamps: false,
+    createdAt: false,
+    updatedAt: false,
+    sequelize: sequelizeSql,
   }
 );
+
 export default Role;

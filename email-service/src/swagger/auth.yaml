@@ -1,0 +1,92 @@
+  const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'API Gateway Documentation',
+      version: '1.0.0',
+      description: 'Documentation for E-Recruitment API Gateway services',
+    },
+    servers: [
+      {
+        url: 'http://localhost:5000',
+        description: 'Development server',
+      },
+    ],
+    paths: {
+      // Auth routes
+      '/auth/login': {
+        post: {
+          tags: ['Auth'],
+          summary: 'Login to system',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    username: { type: 'string' },
+                    password: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Login successful'
+            }
+          }
+        }
+      },
+      '/auth/get-me': {
+        get: {
+          tags: ['Auth'],
+          summary: 'Get current user info',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: 'User info retrieved successfully'
+            }
+          }
+        }
+      },
+      // Code Approval routes
+      '/codeApproval/create': {
+        post: {
+          tags: ['Code Approval'],
+          summary: 'Create new code approval',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            201: {
+              description: 'Code approval created successfully'
+            }
+          }
+        }
+      },
+      // Language routes  
+      '/language/language/getGroup': {
+        get: {
+          tags: ['Language'],
+          summary: 'Get language groups',
+          responses: {
+            200: {
+              description: 'List of language groups'
+            }
+          }
+        }
+      }
+      // Thêm các routes khác tương tự
+    },
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT'
+        }
+      }
+    }
+  },
+  apis: [] // Không cần file yaml nữa vì đã define trực tiếp
+};

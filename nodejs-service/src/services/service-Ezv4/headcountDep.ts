@@ -89,6 +89,7 @@ export class HeadCountRecruitEzV4 {
           .filter((item: any) => item.ParentID === parentId)
           .map((item: any) => ({
             name: item.Name,
+            id: item.ID,
             children: buildTree(item.ID),
           }));
       }
@@ -100,6 +101,7 @@ export class HeadCountRecruitEzV4 {
       // Trả về JSON dạng cây
       return {
         name: rootNode.Name,
+        id: rootNode.ID,
         children: buildTree(rootNode.ID),
       };
     } catch (error) {

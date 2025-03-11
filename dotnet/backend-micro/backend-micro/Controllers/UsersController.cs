@@ -25,7 +25,7 @@ namespace backend_micro.Controllers
             try
             {
                 var agv = await _userService.GetAll();
-                _rabbitMQService.SendMessage("Hello, RabbitMQ!");
+                //_rabbitMQService.SendMessage("Hello, RabbitMQ!");
 
                 return Ok(agv);
             }

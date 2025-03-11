@@ -4,10 +4,9 @@ import { signInSchema } from "../schema/login.schema";
 import Users from "../model/user.model";
 import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid"; // Import phương thức v4 từ uuid
 import { generateRefreshToken, generateToken } from "../config/token";
-import { redis } from "../config/redis";
 dotenv.config();
 
 export const AuthController = {
@@ -25,11 +24,11 @@ export const AuthController = {
       const hashedPassword = await bcrypt.hash(password, 10);
       const newUserData = {
         UserId: uuidv4(),
-        EmployeeCode: dataLoginByAd.data.data.employeeId,
+        EmployeeCode: employeeCode,
         Avatar: "image/male.jpg",
         Email: dataLoginByAd.data.data.email,
         Username: dataLoginByAd.data.data.fullName,
-        RoleId: "29E26E83-7721-4516-8E9A-F5D02DEE22D0",
+        RoleId: "4F2BF40B-52D5-41E5-9CC2-B8251B436F4E",
         Password: hashedPassword,
         RefreshToken: "",
         Code: dataLoginByAd.data.data.employeeId,
@@ -46,25 +45,18 @@ export const AuthController = {
         username: newUserData.Username,
         role: newUserData.RoleId,
       });
-      const dataSaveRedis = {
-        UserId: newUser.UserId,
-        Username: newUser.Username,
-        Email: newUser.Email,
-        RoleId: newUser.RoleId,
-        Avatar: newUser.Avatar,
-      };
-      await redis.hmset(`user:${newUser.UserId}`, dataSaveRedis);
-      await redis.expire(`user:${newUser.UserId}`, 3600);
-      await redis.set(
-        `token:${token}`,
-        JSON.stringify(dataSaveRedis),
-        "EX",
-        3600
+      await Users.update(
+        {RefreshToken: refreshToken },
+        {
+          where: {
+            UserId: newUser.UserId,
+          },
+        }
       );
       return {
         status: 200,
         message: "Successfully",
-        data: { token: token },
+        data: { token: token, refreshToken: refreshToken },
       };
     } catch (error: any) {
       if (error?.response?.data?.error_code == 403) {
@@ -78,7 +70,6 @@ export const AuthController = {
           status: 500,
           message: "Error , Please check your account and password again !",
           data: null,
-          error: error,
         };
       }
     }
@@ -93,8 +84,13 @@ export const AuthController = {
       });
       if (verifyByAd.data.result == 1) {
         const hashedPassword = await bcrypt.hash(password, 10);
+        const refreshToken = generateRefreshToken({
+          UserId: user.UserId,
+          username: user.Username,
+          role: user.RoleId,
+        });
         await Users.update(
-          { Password: hashedPassword },
+          { Password: hashedPassword, RefreshToken: refreshToken },
           {
             where: {
               UserId: user.UserId,
@@ -106,30 +102,11 @@ export const AuthController = {
           username: user.Username,
           role: user.RoleId,
         });
-        const refreshToken = generateRefreshToken({
-          UserId: user.UserId,
-          username: user.Username,
-          role: user.RoleId,
-        });
-        const dataSaveRedis = {
-          UserId: user.UserId,
-          Username: user.Username,
-          Email: user.Email,
-          RoleId: user.RoleId,
-          Avatar: user.Avatar,
-        };
-        await redis.hmset(`user:${user.UserId}`, dataSaveRedis);
-        await redis.expire(`user:${user.UserId}`, 3600);
-        await redis.set(
-          `token:${token}`,
-          JSON.stringify(dataSaveRedis),
-          "EX",
-          3600
-        );
+      
         return {
           status: 200,
           message: "Successfully",
-          data: { token: token },
+          data: { token: token, refreshToken: refreshToken },
         };
       }
     } catch (error: any) {
@@ -144,7 +121,6 @@ export const AuthController = {
           status: 500,
           message: "Error , Please check your account and password again !",
           data: null,
-          error: error,
         };
       }
     }
@@ -159,35 +135,93 @@ export const AuthController = {
           message: errors[0],
         });
       }
-      const newCode = employeeCode.replace(/dmvn|vn/g, "");
+      const normalizedCode = employeeCode.toLowerCase().replace(/^(dmvn|vn)/g, "");
+      
       const checkExistUser = await Users.findOne({
-        where: { EmployeeCode: newCode },
+        where: { 
+          EmployeeCode: normalizedCode 
+        },
       });
+
       if (!checkExistUser) {
         const dataLoginByAd = await AuthController.LoginFirstTime(
-          newCode,
+          normalizedCode,
           password
         );
-        res.cookie("refreshToken", dataLoginByAd.data?.token, {
-          httpOnly: true,
-          secure: false,
-          path: "/",
-          sameSite: "strict",
-        });
+        if (dataLoginByAd?.status == 403) {
+          return res.status(403).json({
+            status: 1,
+            message: "Username or Password is not correct",
+          });
+        }
         return res.status(200).json(dataLoginByAd);
       } else {
-        console.log(1);
         const dataVerifyAd = await AuthController.VerifyByAd(
-          newCode,
+          normalizedCode,
           password,
           checkExistUser
         );
-        console.log(dataVerifyAd, "dataVerifyAd");
+        if (dataVerifyAd?.status == 403) {
+          return res.status(403).json({
+            status: 1,
+            message: "Username or Password is not correct",
+          });
+        }
         return res.status(200).json(dataVerifyAd);
       }
     } catch (error: any) {
       return res.status(500).json({
         message: error.message,
+      });
+    }
+  },
+  refetchToken: async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { refreshToken } = req.body;
+      if (!refreshToken) {
+        return res.status(400).json({ message: "Refresh token is required" });
+      }
+      const secret = process.env.SECRET_REFRESH;
+      if (!secret) {
+        throw new Error(
+          "SECRET_REFRESH is not defined in environment variables"
+        );
+      }
+      let decoded: JwtPayload;
+      try {
+        decoded = jwt.verify(refreshToken, secret) as JwtPayload;
+      } catch (error) {
+        return res
+          .status(403)
+          .json({ message: "Expired or invalid refresh token" });
+      }
+      const UserId = decoded.UserId;
+      const user = await Users.findByPk(UserId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (user.RefreshToken !== refreshToken) {
+        return res.status(403).json({ message: "Invalid refresh token" });
+      }
+      const currentTime = Math.floor(Date.now() / 1000); // Lấy thời gian hiện tại (seconds)
+      if (decoded.exp && decoded.exp < currentTime) {
+        return res
+          .status(403)
+          .json({ message: "Refresh token expired, please login again" });
+      }
+      const newAccessToken = generateToken({
+        UserId: user.UserId,
+        username: user.Username,
+        role: user.RoleId,
+      });
+      return res.status(200).json({
+        message: "Success",
+        accessToken: newAccessToken,
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        message: error.message || "Internal server error",
       });
     }
   },

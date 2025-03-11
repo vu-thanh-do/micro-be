@@ -18,7 +18,7 @@ import { InfoUserEzV4 } from "../services/service-Ezv4/infoUserEzV4";
 import DepartmentEzV4 from "../services/service-Ezv4/department";
 import { LanguageService } from "../services/services/language.service";
 import LanguageController from "../controllers/controllers-project/language/language.controller";
-
+import RequestRecruitmentController from "../controllers/controllers-project/requestRecruitment/requestRecruitment.controller";
 const container = new Container();
 // Bind dependencies
 container.bind<LoggerService>(LoggerService).toSelf();
@@ -43,5 +43,7 @@ container.bind<NotificationController>(NotificationController).toSelf();
 container.bind<LoggerController>(LoggerController).toSelf();
 container.bind<HeadCountPlanController>(HeadCountPlanController).toSelf();
 container.bind<LanguageController>(LanguageController).toSelf();
+container.bind<RequestRecruitmentController>(RequestRecruitmentController).toSelf();
+
 
 export default container;

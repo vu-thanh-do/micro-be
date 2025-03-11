@@ -1,25 +1,174 @@
 version: '3.8'
 services:
+  # Databases
+  mongodb:
+    image: mongo:latest
+    container_name: e-recruitment-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - e-recruitment-network
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: e-recruitment-sqlserver
+    restart: always
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: StrongPassword123!
+      MSSQL_PID: Express
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - e-recruitment-network
+
+  # Message broker & Cache
   rabbitmq:
     image: rabbitmq:management
-    container_name: rabbitmq
+    container_name: e-recruitment-rabbitmq
+    restart: always
     ports:
-      - "5672:5672" # Cổng AMQP để các service kết nối
-      - "15672:15672" # Cổng giao diện quản trị
+      - "5672:5672"   # AMQP để các service kết nối
+      - "15672:15672" # Giao diện quản trị
     environment:
-      RABBITMQ_DEFAULT_USER: admin # Tên người dùng mặc định
-      RABBITMQ_DEFAULT_PASS: admin123 # Mật khẩu mặc định
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
     networks:
-      - rabbitmq_network
+      - e-recruitment-network
 
   redis:
     image: redis:latest
-    container_name: redis
+    container_name: e-recruitment-redis
+    restart: always
     ports:
-      - "6379:6379"  # Cổng mặc định của Redis
+      - "6379:6379"
     command: ["redis-server", "--requirepass", "1234qwer!"]
+    volumes:
+      - redis_data:/data
     networks:
-      - rabbitmq_network
+      - e-recruitment-network
+
+  # Microservices
+  login-service:
+    build:
+      context: ./login-service
+      dockerfile: Dockerfile
+    container_name: e-recruitment-login-service
+    restart: always
+    ports:
+      - "9988:9988"
+    environment:
+      NODE_ENV: production
+      DB_HOST: sqlserver
+      DB_PORT: 1433
+      DB_NAME: e_recruitment_auth
+      DB_USER: sa
+      DB_PASSWORD: StrongPassword123!
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: 1234qwer!
+      JWT_SECRET: your_jwt_secret_key
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
+    depends_on:
+      - sqlserver
+      - redis
+      - rabbitmq
+    volumes:
+      - login_service_logs:/app/logs
+    networks:
+      - e-recruitment-network
+
+  nodejs-service:
+    build:
+      context: ./nodejs-service
+      dockerfile: Dockerfile
+    container_name: e-recruitment-nodejs-service
+    restart: always
+    ports:
+      - "4001:4001"
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/e_recruitment?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: 1234qwer!
+      JWT_SECRET: your_jwt_secret_key
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
+    depends_on:
+      - mongodb
+      - redis
+      - rabbitmq
+    volumes:
+      - nodejs_service_logs:/app/logs
+    networks:
+      - e-recruitment-network
+
+  file-service:
+    build:
+      context: ./file-service
+      dockerfile: Dockerfile
+    container_name: e-recruitment-file-service
+    restart: always
+    ports:
+      - "3345:3345"
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/e_recruitment_files?authSource=admin
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
+    volumes:
+      - file_uploads:/app/src/uploads
+      - file_service_logs:/app/logs
+    depends_on:
+      - mongodb
+      - rabbitmq
+    networks:
+      - e-recruitment-network
+
+  email-service:
+    build:
+      context: ./email-service
+      dockerfile: Dockerfile
+    container_name: e-recruitment-email-service
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      LOGIN_SERVICE_URL: http://login-service:9988
+      NODEJS_SERVICE_URL: http://nodejs-service:4001
+      FILE_SERVICE_URL: http://file-service:3345
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
+    depends_on:
+      - login-service
+      - nodejs-service
+      - file-service
+      - rabbitmq
+    volumes:
+      - email_service_logs:/app/logs
+    networks:
+      - e-recruitment-network
+
+volumes:
+  mongodb_data:
+  sqlserver_data:
+  rabbitmq_data:
+  redis_data:
+  login_service_logs:
+  nodejs_service_logs:
+  file_service_logs:
+  email_service_logs:
+  file_uploads:
+
 networks:
-  rabbitmq_network:
+  e-recruitment-network:
     driver: bridge

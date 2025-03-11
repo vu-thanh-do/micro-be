@@ -13,3 +13,18 @@ export interface UserAttributes {
     CreatedBy?: string;
     UpdatedBy?: string;
   }
+
+interface Permission {
+  PermissionName: string; 
+  Actions: {
+    ActionName: string;
+    Route?: string;
+  }[];
+}
+
+export interface RoleAttributes {
+  RoleId: string;
+  RoleName: string;
+  Permission: Permission[];
+  CreatedDate?: Date;
+}
