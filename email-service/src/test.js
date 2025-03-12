@@ -38,6 +38,7 @@ const SERVICES = {
   LOG_SERVICE: "http://localhost:4001",
   FILE_SERVICE: "http://localhost:3345",
   REQUEST_RECRUITMENT_SERVICE: "http://localhost:4001",
+  LINE_MFG_SERVICE: "http://localhost:4001",
 };
 
 // Debug middleware to log all requests
@@ -308,6 +309,35 @@ app.use('/formTemplate', createServiceProxy(
   SERVICES.FORM_TEMPLATE_SERVICE,
   { '^/formTemplate': '/formTemplate' }
 ));
+// Line Mfg routes
+app.get('/lineMfg/getAllLineMfg', createServiceProxy(
+  SERVICES.LINE_MFG_SERVICE,
+  { '^/lineMfg/getAllLineMfg': (path, req) => {
+    const query = new URLSearchParams(req.query).toString();
+    return `/lineMfg/getAllLineMfg${query ? '?' + query : ''}`;
+  } }
+));
+app.post('/lineMfg/createLine', createServiceProxy(
+  SERVICES.LINE_MFG_SERVICE,
+  { '^/lineMfg/createLine': '/lineMfg/createLine' }
+));
+app.put('/lineMfg/updateLine/:id', createServiceProxy(
+  SERVICES.LINE_MFG_SERVICE,
+  { '^/lineMfg/updateLine/:id': '/lineMfg/updateLine/:id' }
+));
+app.post('/lineMfg/toggleLine/:id', createServiceProxy(
+  SERVICES.LINE_MFG_SERVICE,
+  { '^/lineMfg/toggleLine/:id': '/lineMfg/toggleLine/:id' }
+)); 
+app.post('/lineMfg/importExcel', createServiceProxy(
+  SERVICES.LINE_MFG_SERVICE,
+  { '^/lineMfg/importExcel': '/lineMfg/importExcel' }
+)); 
+app.get('/lineMfg/downloadTemplate', createServiceProxy(
+  SERVICES.LINE_MFG_SERVICE,
+  { '^/lineMfg/downloadTemplate': '/lineMfg/downloadTemplate' }
+));   
+
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -319,7 +349,8 @@ app.get('/health', (req, res) => {
       codeApproval: SERVICES.CODE_APPROVAL_SERVICE,
       headCount: SERVICES.HEAD_COUNT_SERVICE,
       language: SERVICES.LANGUAGE_SERVICE,
-      formTemplate: SERVICES.FORM_TEMPLATE_SERVICE
+      formTemplate: SERVICES.FORM_TEMPLATE_SERVICE,
+      lineMfg: SERVICES.LINE_MFG_SERVICE
     }
   });
 });

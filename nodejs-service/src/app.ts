@@ -23,6 +23,7 @@ import Language from "./models/models-project/language.model";
 import LanguageController from "./controllers/controllers-project/language/language.controller";
 import FormTemplate from "./models/models-project/formTemplate.model";
 import RequestRecruitmentController from "./controllers/controllers-project/requestRecruitment/requestRecruitment.controller";
+import LineMfgController from "./controllers/controllers-project/lineMfg/LineMfg.controller";
 useContainer(container);
 const app = createExpressServer({
   cors: {
@@ -47,6 +48,7 @@ const app = createExpressServer({
     HeadCountPlanController,
     LanguageController,
     RequestRecruitmentController,
+    LineMfgController
   ],
 });
 
