@@ -542,10 +542,29 @@ app.get('/lineMfg/getAllLineMfg', createServiceProxy(
     return `/lineMfg/getAllLineMfg${query ? '?' + query : ''}`;
   } }
 ));
-app.post('/lineMfg/createLine', createServiceProxy(
-  SERVICES.LINE_MFG_SERVICE,
-  { '^/lineMfg/createLine': '/lineMfg/createLine' }
-));
+app.post('/lineMfg/createLine',  async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.LINE_MFG_SERVICE}/lineMfg/createLine`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Create Line Mfg Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to create line mfg",
+      data: null
+    });
+  }
+});
 app.put('/lineMfg/updateLine/:id', createServiceProxy(
   SERVICES.LINE_MFG_SERVICE,
   { '^/lineMfg/updateLine/:id': '/lineMfg/updateLine/:id' }
