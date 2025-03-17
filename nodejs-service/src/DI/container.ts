@@ -20,6 +20,9 @@ import { LanguageService } from "../services/services/language.service";
 import LanguageController from "../controllers/controllers-project/language/language.controller";
 import RequestRecruitmentController from "../controllers/controllers-project/requestRecruitment/requestRecruitment.controller";
 import LineMfgController from "../controllers/controllers-project/lineMfg/LineMfg.controller";
+import MfgReplaceRecuitmentController from "../controllers/controllers-project/requestRecruitment/mfgReplaceRecuitment.controller";
+import { ResignController } from "../controllers/controllers-project/requestRecruitment/resign.controller";
+import ResignInfoEzv4 from "../services/service-Ezv4/resign";
 const container = new Container();
 // Bind dependencies
 container.bind<LoggerService>(LoggerService).toSelf();
@@ -34,7 +37,7 @@ container.bind<HeadCountRecruitEzV4>(HeadCountRecruitEzV4).toSelf();
 container.bind<InfoUserEzV4>(InfoUserEzV4).toSelf();
 container.bind<DepartmentEzV4>(DepartmentEzV4).toSelf();
 container.bind<LanguageService>(LanguageService).toSelf();
-
+container.bind<ResignInfoEzv4>(ResignInfoEzv4).toSelf();
 
 // bind controlelr
 container.bind<CodeApprovalController>(CodeApprovalController).toSelf();
@@ -46,5 +49,6 @@ container.bind<HeadCountPlanController>(HeadCountPlanController).toSelf();
 container.bind<LanguageController>(LanguageController).toSelf();
 container.bind<RequestRecruitmentController>(RequestRecruitmentController).toSelf();
 container.bind<LineMfgController>(LineMfgController).toSelf();
-
+container.bind<MfgReplaceRecuitmentController>(MfgReplaceRecuitmentController).toSelf();
+container.bind<ResignController>(ResignController).toSelf();
 export default container;

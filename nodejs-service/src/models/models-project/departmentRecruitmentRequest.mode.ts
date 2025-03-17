@@ -13,6 +13,7 @@ const DepartmentRecruitmentRequestSchema = new mongoose.Schema({
     comment: { type: String },
   },
   positions: { type: Array },
+
   levelApproval: [
     {
       Id: { type: Number },

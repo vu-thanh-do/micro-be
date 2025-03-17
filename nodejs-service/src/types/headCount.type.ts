@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 export interface IDataHeadCount {
   ID: number;
   DepartmentID: number;
@@ -15,3 +17,5 @@ export interface INameDep {
     Code: string,
     Name: string,
   }
+
+  

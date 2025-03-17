@@ -1,41 +1,72 @@
-import mongoose, { Model } from "mongoose";
+import mongoose, { Model, Schema } from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
-import { IRequireData } from "../../types/requireData.type";
 import { IFormTemplate } from "../../types/formTemplate.type";
 
-const FormTemplateSchema = new mongoose.Schema(
+const SpecificCodeApproveSchema = new Schema({
+  employeeCode: String,
+  employeeName: String, 
+  employeeEmail: String,
+  deptId: String,
+});
+
+const ExcludeCodeApproveSchema = new Schema({
+  employeeCode: String
+});
+
+const CodeApprovalSchema = new Schema({
+  _idCodeApproval: {
+    type: Schema.Types.ObjectId,
+    ref: "CodeApproval",
+    required: true
+  },
+  status: {
+    type: String,
+    required: true
+  },
+  indexSTT: {
+    type: Number,
+    required: true
+  },
+  specificCodeApprove: [SpecificCodeApproveSchema],
+  excludeCodeApprove: [ExcludeCodeApproveSchema]
+});
+
+const FormTemplateSchema = new Schema(
   {
     nameForm: {
       type: Object,
+      required: true
     },
     typeForm: {
       type: String,
+      required: true
     },
     version: {
       type: String,
+      required: true
     },
     dateApply: {
       type: Date,
+      required: true
     },
     fields: [],
-    codeApproval: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "CodeApproval",
-      },
-    ],
+    codeApproval: [CodeApprovalSchema],
     status: {
       type: String,
-    },
+      required: true
+    }
   },
   {
     timestamps: true,
-    versionKey: false,
+    versionKey: false
   }
 );
+
 FormTemplateSchema.plugin(mongoosePaginate);
+
 const FormTemplate: Model<IFormTemplate> = mongoose.model<IFormTemplate>(
   "FormTemplate",
   FormTemplateSchema
 );
+
 export default FormTemplate;

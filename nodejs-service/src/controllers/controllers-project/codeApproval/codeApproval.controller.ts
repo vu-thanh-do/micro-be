@@ -125,6 +125,39 @@ class CodeApprovalController {
       throw new HttpError(error.message, 500);
     }
   }
+  @Put("/update/:id")
+  @HttpCode(200)
+  async updateCodeApproval(
+    @Req() request: Request,
+    @Res() response: Response,
+    @Body() data: ICodeApproval
+  ) {
+    try {
+      const { id } = request.params;
+      const sessionStart: any = await this.uow.start();
+      if (!sessionStart) {
+        throw new Error("Session failed to start");
+      }
+      const dataCodeApproval = await this.codeApprovalService.update(
+        id,
+        data,
+        this.uow
+      ); // Gọi đến service
+      await this.uow.commit(); // Commit transaction vào CSDL
+      return response.send(
+        this.responseDataService.createResponse(
+          200,
+          dataCodeApproval,
+          "code approval updated successfully!"
+        )
+      );
+    } catch (error: any) {
+      console.error("Error occurred, rolling back", error);
+      await this.uow.rollback(); // Rollback transaction nếu có lỗi
+      console.error("roll back ok");
+      throw new HttpError(error.message, 500);
+    }
+  }
 }
 
 export default CodeApprovalController;

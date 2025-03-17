@@ -39,6 +39,7 @@ const SERVICES = {
   FILE_SERVICE: "http://localhost:3345",
   REQUEST_RECRUITMENT_SERVICE: "http://localhost:4001",
   LINE_MFG_SERVICE: "http://localhost:4001",
+
 };
 
 // Debug middleware to log all requests
@@ -221,10 +222,57 @@ app.get('/files/get-file-by-id/:id', createServiceProxy(
   10000
   ));
 // Code Approval routes
-app.use('/codeApproval', createServiceProxy(
+app.get('/codeApproval', createServiceProxy(
   SERVICES.CODE_APPROVAL_SERVICE,
   { '^/codeApproval': '/codeApproval' }
 ));
+app.get('/codeApproval/get-by-id/:id', createServiceProxy(
+  SERVICES.CODE_APPROVAL_SERVICE,
+  { '^/codeApproval/get-by-id/:id': '/codeApproval/get-by-id/:id' }
+));
+app.post('/codeApproval/create',async(req,res)=>{
+  try {
+    const response = await fetch(`${SERVICES.CODE_APPROVAL_SERVICE}/codeApproval/create`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body)
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Create Code Approval Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to create code approval",
+      data: null
+    });
+  }
+});
+app.put('/codeApproval/update/:id',async(req,res)=>{
+  try {
+    const response = await fetch(`${SERVICES.CODE_APPROVAL_SERVICE}/codeApproval/update/${req.params.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body)
+    }); 
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Update Code Approval Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to update code approval",
+      data: null
+    });
+    }
+});
+
 
 // Head Count routes
 app.use('/headCount', createServiceProxy(
@@ -281,6 +329,59 @@ app.post('/requestRecruitment/department/create', async (req, res) => {
     });
   }
 });
+app.get('/requestRecruitment/department/user/:id', createServiceProxy(
+  SERVICES.REQUEST_RECRUITMENT_SERVICE,
+  { '^/requestRecruitment/department/user/:id':(path, req)   => {
+    const query = new URLSearchParams(req.query).toString();
+    return `/requestRecruitment/department/user/${req.params.id}${query ? '?' + query : ''}`;
+  } }
+));
+app.put('/requestRecruitment/department/edit/:id', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/department/edit/${req.params.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Edit Request Recruitment Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to edit request recruitment",
+      data: null
+    });
+  }
+});
+app.put('requestRecruitment/department/revise/:id', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/department/revise/${req.params.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Revise Request Recruitment Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to revise request recruitment",
+      data: null
+    });
+  }
+});
 app.post('/requestRecruitment/department/approve', async (req, res) => {
   try {
     const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/department/approve`, {
@@ -304,8 +405,132 @@ app.post('/requestRecruitment/department/approve', async (req, res) => {
     });
   }
 });
+// mfg replace
+app.post('/requestRecruitment/mfgReplace/create', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/mfgReplace/create`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Create Mfg Replace Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to create mfg replace",
+      data: null
+    });
+  }
+});
+app.put('/requestRecruitment/mfgReplace/edit/:id', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/mfgReplace/edit/${req.params.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Edit Mfg Replace Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to edit mfg replace",
+      data: null
+    });
+  }
+});
+app.get('/requestRecruitment/mfgReplace/:id', createServiceProxy(
+  SERVICES.REQUEST_RECRUITMENT_SERVICE,
+  { '^/requestRecruitment/mfgReplace/:id':(path, req)   => {
+    const query = new URLSearchParams(req.query).toString();
+    return `/requestRecruitment/mfgReplace/${req.params.id}${query ? '?' + query : ''}`;
+  } }
+));
+
+app.post('/requestRecruitment/mfgReplace/approve', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/mfgReplace/approve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Approve Mfg Replace Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to approve mfg replace",
+      data: null
+    });
+  }
+});
+app.post('/requestRecruitment/mfgReplace/revise/:id', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/mfgReplace/revise/${req.params.id}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Revise Mfg Replace Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to revise mfg replace",
+      data: null
+    });
+  }
+});
+app.delete('/requestRecruitment/mfgReplace/:id', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/mfgReplace/${req.params.id}`, {
+      method: 'DELETE',
+      headers: {  
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000 // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Delete Mfg Replace Error:', error);
+    return res.status(500).json({
+      code: 500,  
+      status: "Error",
+      message: "Failed to delete mfg replace",
+      data: null
+    });
+  }
+});
+
+
 // Form Template routes
-app.use('/formTemplate', createServiceProxy(
+app.get('/formTemplate', createServiceProxy(
   SERVICES.FORM_TEMPLATE_SERVICE,
   { '^/formTemplate': '/formTemplate' }
 ));
@@ -337,6 +562,7 @@ app.get('/lineMfg/downloadTemplate', createServiceProxy(
   SERVICES.LINE_MFG_SERVICE,
   { '^/lineMfg/downloadTemplate': '/lineMfg/downloadTemplate' }
 ));   
+// code approval
 
 
 // Health check endpoint
