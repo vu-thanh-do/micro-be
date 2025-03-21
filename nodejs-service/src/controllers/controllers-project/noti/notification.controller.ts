@@ -11,6 +11,7 @@ import {
   Post,
   Req,
   Res,
+  Param,
 } from "routing-controllers";
 import { inject, injectable } from "inversify";
 @JsonController("/notifications")
@@ -60,6 +61,134 @@ class NotificationController {
   async getNoti(@Req() request: Request, @Res() response: Response) {
     const dataNoti = await this.notiService.getAll();
     return response.send(dataNoti);
+  }
+  @Get("/admin")
+  @HttpCode(200)
+  async getNotiAdmin(@Req() request: Request, @Res() response: Response) {
+    const dataNoti = await this.notiService.getNotifications( {role: "ADMIN"}, {sort: { createdAt: -1 }});
+    return response.send(dataNoti);
+  }
+  @Get("/users/:userId")
+  @HttpCode(200)
+  async getNotificationsByRole(
+
+    @Param("userId") userId: string,
+    @Req() req: Request,
+    @Res() response: Response
+  ) {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const isRead = req.query.isRead as string;
+
+      const filter: any = {
+        userId: userId
+      };
+
+      if (isRead) {
+        filter.isRead = isRead === 'true';
+      }
+
+      const options = {
+        page,
+        limit,
+        sort: { createdAt: -1 }
+      };
+
+      const result = await this.notiService.getNotifications(filter, options);
+
+      return response.status(200).json({
+        status: 200,
+        message: "Lấy danh sách thông báo thành công",
+        data: result.docs,
+        pagination: {
+          totalDocs: result.totalDocs,
+          limit: result.limit,
+          totalPages: result.totalPages,
+          page: result.page,
+          hasPrevPage: result.hasPrevPage,
+          hasNextPage: result.hasNextPage,
+          prevPage: result.prevPage,
+          nextPage: result.nextPage
+        }
+      });
+    } catch (error: any) {
+      return response.status(500).json({
+        status: 500,
+        message: "Đã xảy ra lỗi khi lấy danh sách thông báo",
+        error: error.message
+      });
+    }
+  }
+  @Post("/mark-read/:id")
+  @HttpCode(200)
+  async markAsRead(@Param("id") id: string, @Res() response: Response) {
+    try {
+      const sessionStart = await this.uow.start();
+      if (!sessionStart) {
+        throw new Error("Session failed to start");
+      }
+
+      const notification = await this.notiService.markAsRead(id, sessionStart);
+      await this.uow.commit();
+
+      return response.status(200).json({
+        status: 200,
+        message: "Đã đánh dấu thông báo là đã đọc",
+        data: notification
+      });
+    } catch (error: any) {
+      await this.uow.rollback();
+      return response.status(500).json({
+        status: 500,
+        message: "Đã xảy ra lỗi khi đánh dấu thông báo",
+        error: error.message
+      });
+    }
+  }
+  @Post("/mark-all-read/:userId")
+  @HttpCode(200)
+  async markAllAsRead(@Param("userId") userId: string, @Res() response: Response) {
+    try {
+      const sessionStart = await this.uow.start();
+      if (!sessionStart) {
+        throw new Error("Session failed to start");
+      }
+
+      await this.notiService.markAllAsRead(userId, sessionStart);
+      await this.uow.commit();
+
+      return response.status(200).json({
+        status: 200,
+        message: "Đã đánh dấu tất cả thông báo là đã đọc"
+      });
+    } catch (error: any) {
+      await this.uow.rollback();
+      return response.status(500).json({
+        status: 500,
+        message: "Đã xảy ra lỗi khi đánh dấu thông báo",
+        error: error.message
+      });
+    }
+  }
+  @Get("/unread-count/:userId")
+  @HttpCode(200)
+  async getUnreadCount(@Param("userId") userId: string, @Res() response: Response) {
+    try {
+      const count = await this.notiService.getUnreadCount(userId);
+
+      return response.status(200).json({
+        status: 200,
+        message: "Lấy số lượng thông báo chưa đọc thành công",
+        data: { count }
+      });
+    } catch (error: any) {
+      return response.status(500).json({
+        status: 500,
+        message: "Đã xảy ra lỗi khi lấy số lượng thông báo chưa đọc",
+        error: error.message
+      });
+    }
   }
 }
 

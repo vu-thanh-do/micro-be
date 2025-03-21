@@ -305,6 +305,29 @@ app.get('/requestRecruitment/department/:id', createServiceProxy(
     return `/requestRecruitment/department/${req.params.id}${query ? '?' + query : ''}`;
   } }
 ));
+app.put('/requestRecruitment/update-processing/:id', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/update-processing/${req.params.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    
+    const data = await response.json();
+    return res.status(response.status).json(data);  
+  } catch (error) {
+    console.error('Update Request Recruitment Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to update request recruitment",
+      data: null
+    });
+  }
+});
 
 app.post('/requestRecruitment/department/create', async (req, res) => {
   try {

@@ -1,5 +1,5 @@
 import HttpError from "../../../errors/httpError";
-import { INoti } from "../../../types/noti.type";
+import { INoti, INotificationData } from "../../../types/noti.type";
 import { NotificationService } from "../../../services/services/notification.service";
 import { UnitOfWork } from "../../../unitOfWork/unitOfWork";
 import express, { Request, Response } from "express";
@@ -18,6 +18,7 @@ import { inject, injectable } from "inversify";
 import RequestRecruitment from "../../../models/models-project/requestRecruitment.model";
 import DepartmentRecruitmentRequest from "../../../models/models-project/departmentRecruitmentRequest.mode";
 import ApprovalHistory from "../../../models/models-project/approvalHistory.model";
+import MfgReplaceRecruitmentRequest from "../../../models/models-project/mfgReplaceRecruitmentRequest.model";
 
 interface IRecruitmentRequest {
   userId: string;
@@ -151,27 +152,69 @@ class RequestRecruitmentController {
 
       // 4. Gửi thông báo nếu cần
       // Tạo thông báo cho người phê duyệt cấp 1
-      //   if (data.levelApproval && data.levelApproval.length > 0) {
-      //     const firstApprover = data.levelApproval[0];
-      //     if (firstApprover.EmployeeId) {
-      //       const notificationData: INoti = {
-      //         userId: firstApprover.EmployeeId,
-      //         title: 'Yêu cầu phê duyệt mới',
-      //         content: `Bạn có một yêu cầu tuyển dụng mới cần phê duyệt từ ${data.RequesterName || 'Người dùng'}`,
-      //         isRead: false,
-      //         type: 'approval',
-      //         link: `/recruitment-requests/detail/${requestRecruitment._id}`,
-      //         createdAt: new Date()
-      //       };
-
-      //       await this.notiService.create(notificationData, sessionStart);
-      //     }
-      //   }
-
+        if (data.levelApproval && data.levelApproval.length > 0) {
+          const firstApprover = data.levelApproval[0];
+          if (firstApprover.EmployeeId) {
+            const approverNotification: any = {
+              title: "Yêu cầu tuyển dụng mới",
+              content: "Bạn có yêu cầu mới cần phê duyệt",
+              type: "APPROVAL_NEEDED",
+              userId: firstApprover.EmployeeId,
+              role: "APPROVER",
+              requestId: requestRecruitment._id,
+              requestType: "DEPARTMENT",
+              isRead: false,
+              metadata: {
+                requestTitle: requestRecruitment.nameForm?.title || "",
+                requesterName: requestRecruitment.createdBy?.RequesterName || "",
+                requesterCode: requestRecruitment.createdBy?.RequesterCode || "",
+                approvalLevel: 1,
+                link: `/${requestRecruitment._id}`
+              }
+            };
+            try {
+              await this.notiService.create(
+                approverNotification as INoti,
+                this.uow,
+                sessionStart
+              );
+            } catch (error) {
+              console.error("Error creating notification:", error);
+              // Không throw error ở đây để không ảnh hưởng đến luồng chính
+            }
+          }
+        }
+      
       // Commit transaction
-      await this.uow.commit();
-
+      
+      const adminNotification: any = {
+        title: "Yêu cầu tuyển dụng mới",
+        content: "Có yêu cầu tuyển dụng mới từ phòng ban",
+        type: "NEW_REQUEST",
+        userId: "ADMIN_ID",
+        role: "ADMIN",
+        requestId: requestRecruitment._id,
+        requestType: "DEPARTMENT",
+        isRead: false,
+        metadata: {
+          requestTitle: requestRecruitment.nameForm?.title || "",
+          requesterName: requestRecruitment.createdBy?.RequesterName || "",
+          requesterCode: requestRecruitment.createdBy?.RequesterCode || "",
+          link: `/${requestRecruitment._id}`
+        }
+      };
+      try {
+        await this.notiService.create(
+          adminNotification as INoti,
+          this.uow,
+          sessionStart
+        );
+      } catch (error) {
+        console.error("Error creating notification:", error);
+        // Không throw error ở đây để không ảnh hưởng đến luồng chính
+      }
       // Trả về kết quả
+      await this.uow.commit();
       return response.status(201).json({
         status: 201,
         message: "Yêu cầu tuyển dụng đã được tạo thành công",
@@ -204,43 +247,155 @@ class RequestRecruitmentController {
       const status = req.query.status as string;
       const startDate = req.query.startDate as string;
       const endDate = req.query.endDate as string;
-      console.log(req.query.search);
-      // Tạo filter
+      const formType = (req.query.formType as string) || "all";
+      const processingCode = (req.query.processingCode as string) || "all";
+      // 1. Xây dựng filter cho RequestRecruitment
       const filter: any = {};
-      if (status != "all") {
+
+      if (status && status !== "all") {
         filter.status = status;
       }
+
+      if (formType && formType !== "all") {
+        filter.formType = formType;
+      }
+      if (processingCode && processingCode !== "all") {
+        filter["processing.code"] = processingCode;
+      }
+
       if (search) {
         filter.$or = [
-          { "requestId.formType": { $regex: search, $options: "i" } },
-          { "requestId.RequesterCode": { $regex: search, $options: "i" } },
-          { "requestId.RequesterName": { $regex: search, $options: "i" } },
-          { "requestId.nameForm.title": { $regex: search, $options: "i" } },
+          { formType: { $regex: search, $options: "i" } },
+          { "createdBy.RequesterCode": { $regex: search, $options: "i" } },
+          { "createdBy.RequesterName": { $regex: search, $options: "i" } },
+          { "nameForm.title": { $regex: search, $options: "i" } },
         ];
       }
+
       if (startDate && endDate) {
-        filter.createdAt = { $gte: startDate, $lte: endDate };
+        filter.createdAt = { 
+          $gte: new Date(startDate), 
+          $lte: new Date(endDate) 
+        };
       }
-      // Lấy danh sách yêu cầu tuyển dụng với phân trang
-      const options = {
+
+      // 2. Lấy danh sách từ RequestRecruitment với phân trang
+      const result = await (RequestRecruitment as any).paginate(filter, {
         page,
         limit,
-        sort: { createdAt: -1 },
-        select: "-positions",
-        populate: [
-          {
-            path: "requestId",
+        sort: { createdAt: -1 }
+      });
+
+      if (!result.docs || result.docs.length === 0) {
+        return response.status(200).json({
+          status: 200,
+          message: "Không tìm thấy yêu cầu tuyển dụng",
+          data: [],
+          pagination: {
+            totalDocs: 0,
+            limit,
+            totalPages: 0,
+            page,
+            hasPrevPage: false,
+            hasNextPage: false,
+            prevPage: null,
+            nextPage: null,
           },
-        ],
-      };
-      const result = await (DepartmentRecruitmentRequest as any).paginate(
-        filter,
-        options
-      );
+        });
+      }
+
+      // 3. Lấy thông tin chi tiết từ các bảng khác
+      const requestIds = result.docs.map((req: any) => req._id);
+
+      const [departmentRequests, mfgReplaceRequests] = await Promise.all([
+        DepartmentRecruitmentRequest.find({ requestId: { $in: requestIds } }),
+        MfgReplaceRecruitmentRequest.find({ requestId: { $in: requestIds } }),
+      ]);
+
+      // 4. Tạo map để dễ dàng truy xuất thông tin chi tiết
+      const detailsMap = new Map();
+      
+      departmentRequests.forEach((dept: any) => {
+        detailsMap.set(dept.requestId.toString(), {
+          type: 'DEPARTMENT',
+          data: dept
+        });
+      });
+
+      mfgReplaceRequests.forEach((mfgReplace: any) => {
+        detailsMap.set(mfgReplace.requestId.toString(), {
+          type: 'MFG_REPLACE',
+          data: mfgReplace
+        });
+      });
+
+
+
+      // 5. Transform dữ liệu
+      const transformedData = result.docs.map((req: any) => {
+        const details = detailsMap.get(req._id.toString());
+        const detailData = details?.data || {};
+
+        const baseData = {
+          _id: req._id,
+          requestId: req,  // Giữ toàn bộ thông tin từ RequestRecruitment
+          formType: req.formType,
+          status: req.status,
+          createdBy: req.createdBy,
+          processing: req.processing || [],
+          nameForm: req.nameForm,
+          createdAt: req.createdAt,
+          updatedAt: req.updatedAt
+        };
+
+        switch(details?.type) {
+          case 'DEPARTMENT':
+            return {
+              ...baseData,
+              total: detailData.total || 0,
+              positions: detailData.positions || [],
+              hrAnswer: detailData.hrAnswer,
+              levelApproval: detailData.levelApproval,
+              currentApprovalInfo: detailData.levelApproval?.find(
+                (level: any) => level.status === "pending"
+              ) || detailData.levelApproval?.[detailData.levelApproval.length - 1]
+            };
+
+          case 'MFG_REPLACE':
+            return {
+              ...baseData,
+              year: detailData.year,
+              month: detailData.month,
+              recCode: detailData.recCode,
+              division: detailData.division,
+              department: detailData.department,
+              position: detailData.position,
+              grade: detailData.grade,
+              quantity: detailData.quantity,
+              replacement: detailData.replacement || [],
+              levelApproval: detailData.levelApproval,
+              currentApprovalInfo: detailData.levelApproval?.find(
+                (level: any) => level.status === "pending"
+              ) || detailData.levelApproval?.[detailData.levelApproval.length - 1]
+            };
+
+          case 'MFG':
+            return {
+              ...baseData,
+              year: detailData.year,
+              month: detailData.month,
+              requestByLine: detailData.requestByLine || []
+            };
+
+          default:
+            return baseData;
+        }
+      });
+
       return response.status(200).json({
         status: 200,
         message: "Lấy danh sách yêu cầu tuyển dụng thành công",
-        data: result.docs,
+        data: transformedData,
         pagination: {
           totalDocs: result.totalDocs,
           limit: result.limit,
@@ -375,17 +530,42 @@ class RequestRecruitmentController {
         requestRecruitment.status = "rejected";
 
         // Gửi thông báo cho người tạo yêu cầu về việc từ chối
-        // const notificationToCreator: INoti = {
-        //   userId: requestRecruitment.createdBy.userId,
-        //   title: `Yêu cầu tuyển dụng đã bị từ chối`,
-        //   content: `Yêu cầu tuyển dụng của bạn đã bị từ chối bởi ${data.approverName} ở cấp ${data.level}. Lý do: ${data.reasonReject || 'Không có lý do'}`,
-        //   isRead: false,
-        //   type: 'approval_rejected',
-        //   link: `/recruitment-requests/detail/${requestRecruitment._id}`,
-        //   createdAt: new Date()
-        // };
+        // Trong RequestRecruitmentController
+        const notificationData: INotificationData = {
+          title: "Yêu cầu đã bị từ chối",
+          content: `Yêu cầu của bạn đã bị ${data.approverName} từ chối`,
+          type: "REQUEST_REJECTED",
+          userId: requestRecruitment.createdBy?.userId || "",
+          role: "USER", // Thêm role
+          requestId: data.requestId,
+          requestType: requestRecruitment?.formType as
+            | "MFG"
+            | "DEPARTMENT"
+            | "OTHER", // Thêm requestType
+          isRead: false,
+          metadata: {
+            requestTitle: requestRecruitment.nameForm?.title || "",
+            requesterName: requestRecruitment.createdBy?.RequesterName || "",
+            requesterCode: requestRecruitment.createdBy?.RequesterCode || "",
+            approvalLevel: data.level,
+            actionBy: {
+              name: data.approverName,
+              code: data.approverCode,
+            },
+            link: `/${data.requestId}`,
+          },
+        };
 
-        // await this.notiService.create(notificationToCreator, sessionStart);
+        try {
+          await this.notiService.create(
+            notificationData as INoti,
+            this.uow,
+            sessionStart
+          );
+        } catch (error) {
+          console.error("Error creating notification:", error);
+          // Không throw error ở đây để không ảnh hưởng đến luồng chính
+        }
       } else if (data.status === "approved") {
         // Kiểm tra xem đây có phải là cấp cuối cùng không
         const maxLevel = Math.max(
@@ -481,11 +661,47 @@ class RequestRecruitmentController {
 
           // await this.notiService.create(notificationToCreator, sessionStart);
         }
+        // Trong RequestRecruitmentController
+        const notificationData: INotificationData = {
+          title: "Yêu cầu đã được phê duyệt",
+          content: `Yêu cầu của bạn đã được ${data.approverName} phê duyệt`,
+          type: "REQUEST_APPROVED",
+          userId: requestRecruitment.createdBy?.userId || "",
+          role: "USER", // Thêm role
+          requestId: data.requestId,
+          requestType: requestRecruitment?.formType as
+            | "MFG"
+            | "DEPARTMENT"
+            | "OTHER", // Thêm requestType
+          isRead: false,
+          metadata: {
+            requestTitle: requestRecruitment.nameForm?.title || "",
+            requesterName: requestRecruitment.createdBy?.RequesterName || "",
+            requesterCode: requestRecruitment.createdBy?.RequesterCode || "",
+            approvalLevel: data.level,
+            actionBy: {
+              name: data.approverName,
+              code: data.approverCode,
+            },
+            link: `/${data.requestId}`,
+          },
+        };
+
+        try {
+          await this.notiService.create(
+            notificationData as INoti,
+            this.uow,
+            sessionStart
+          );
+        } catch (error) {
+          console.error("Error creating notification:", error);
+          // Không throw error ở đây để không ảnh hưởng đến luồng chính
+        }
       }
 
       // 6. Lưu các thay đổi
-      await requestRecruitment.save({ session: sessionStart });
-      await departmentRequest.save({ session: sessionStart });
+      await (requestRecruitment as any).save({ session: sessionStart });
+      await (departmentRequest as any).save({ session: sessionStart });
 
       // 7. Tạo lịch sử phê duyệt mới
       const approvalHistoryData = {
@@ -510,8 +726,6 @@ class RequestRecruitmentController {
 
       const approvalHistory = new ApprovalHistory(approvalHistoryData);
       await approvalHistory.save({ session: sessionStart });
-
-      // Commit transaction
       await this.uow.commit();
 
       // Trả về kết quả
@@ -747,7 +961,7 @@ class RequestRecruitmentController {
           });
         });
       }
-
+      
       // 6. Cập nhật thời gian
       if (!existingDepartmentRequest.additionalInfo) {
         existingDepartmentRequest.additionalInfo = {};
@@ -787,6 +1001,52 @@ class RequestRecruitmentController {
         const approvalHistory = new ApprovalHistory(approvalHistoryData);
         await approvalHistory.save({ session: sessionStart });
       }
+
+      // Gửi thông báo cho người phê duyệt cấp 1
+      if (data.levelApproval && data.levelApproval.length > 0) {
+        const firstApprover = data.levelApproval[0];
+        if (firstApprover.EmployeeId) {
+          const approverNotification: any = {
+            title: "Yêu cầu cần phê duyệt lại",
+            content: "Có yêu cầu đã được làm mới và cần phê duyệt lại",
+            type: "APPROVAL_NEEDED",
+            userId: firstApprover.EmployeeId,
+            role: "APPROVER",
+            requestId: id,
+            requestType: "DEPARTMENT",
+            isRead: false,
+            metadata: {
+              requestTitle: existingRequest.nameForm?.title || "",
+              requesterName: existingRequest.createdBy?.RequesterName || "",
+              requesterCode: existingRequest.createdBy?.RequesterCode || "",
+              approvalLevel: 1,
+              link: `/${id}`
+            }
+          };
+
+          await this.notiService.create(approverNotification as INoti, this.uow, sessionStart);
+        }
+      }
+
+      // Gửi thông báo cho admin
+      const adminNotification: any = {
+        title: "Yêu cầu tuyển dụng được làm mới",
+        content: "Có yêu cầu tuyển dụng đã được làm mới và cần xem xét lại",
+        type: "REQUEST_REVISED",
+        userId: "ADMIN_ID",
+        role: "ADMIN",
+        requestId: id,
+        requestType: "DEPARTMENT",
+        isRead: false,
+        metadata: {
+          requestTitle: existingRequest.nameForm?.title || "",
+          requesterName: existingRequest.createdBy?.RequesterName || "",
+          requesterCode: existingRequest.createdBy?.RequesterCode || "",
+          link: `/${id}`
+        }
+      };
+
+      await this.notiService.create(adminNotification as INoti, this.uow, sessionStart);
 
       // Commit transaction
       await this.uow.commit();
@@ -918,13 +1178,60 @@ class RequestRecruitmentController {
           code: "SYSTEM",
         },
         level: 0,
-        status: "edit",
+        status: "pending",
         approvedAt: new Date(),
         comment: "Yêu cầu đã được chỉnh sửa thông tin",
       };
 
       const editHistory = new ApprovalHistory(editHistoryData);
       await editHistory.save({ session: sessionStart });
+
+      // Gửi thông báo cho người phê duyệt hiện tại
+      const currentApprover = existingDepartmentRequest.levelApproval.find(
+        level => level.status === "pending"
+      );
+
+      if (currentApprover) {
+        const approverNotification: any = {
+          title: "Yêu cầu đã được chỉnh sửa",
+          content: "Yêu cầu bạn đang phê duyệt đã được chỉnh sửa thông tin",
+          type: "REQUEST_EDITED",
+          userId: currentApprover.EmployeeId,
+          role: "APPROVER",
+          requestId: id,
+          requestType: "DEPARTMENT",
+          isRead: false,
+          metadata: {
+            requestTitle: existingRequest.nameForm?.title || "",
+            requesterName: existingRequest.createdBy?.RequesterName || "",
+            requesterCode: existingRequest.createdBy?.RequesterCode || "",
+            approvalLevel: currentApprover.level,
+            link: `/${id}`
+          }
+        };
+
+        await this.notiService.create(approverNotification as INoti, this.uow, sessionStart);
+      }
+
+      // Gửi thông báo cho admin
+      const adminNotification: any = {
+        title: "Yêu cầu tuyển dụng được chỉnh sửa",
+        content: "Có yêu cầu tuyển dụng đã được chỉnh sửa thông tin",
+        type: "REQUEST_EDITED",
+        userId: "ADMIN_ID",
+        role: "ADMIN",
+        requestId: id,
+        requestType: "DEPARTMENT",
+        isRead: false,
+        metadata: {
+          requestTitle: existingRequest.nameForm?.title || "",
+          requesterName: existingRequest.createdBy?.RequesterName || "",
+          requesterCode: existingRequest.createdBy?.RequesterCode || "",
+          link: `/${id}`
+        }
+      };
+
+      await this.notiService.create(adminNotification as INoti, this.uow, sessionStart);
 
       // Commit transaction
       await this.uow.commit();
@@ -960,7 +1267,6 @@ class RequestRecruitmentController {
     @Res() response: Response
   ) {
     try {
-      // Lấy các tham số phân trang và lọc
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const status = req.query.status as string;
@@ -968,40 +1274,42 @@ class RequestRecruitmentController {
       const endDate = req.query.endDate as string;
       const sortBy = (req.query.sortBy as string) || "createdAt";
       const sortOrder = (req.query.sortOrder as string) || "desc";
-      const formType = req.query.formType as string || "all";
-      // Xây dựng filter - lấy trực tiếp từ model yêu cầu tuyển dụng
+      const formType = (req.query.formType as string) || "all";
+      const processingCode = (req.query.processingCode as string) || "all";
+      // 1. Xây dựng filter cho RequestRecruitment
       const filter: any = {
-        "createdBy.userId": userId,
+        "createdBy.userId": userId
       };
 
-      // Thêm các điều kiện lọc khác
       if (status && status !== "all") {
         filter.status = status;
-      }
-
-      if (startDate && endDate) {
-        filter.createdAt = {
-          $gte: new Date(startDate),
-          $lte: new Date(endDate),
-        };
       }
 
       if (formType && formType !== "all") {
         filter.formType = formType;
       }
 
-      // Xây dựng options cho phân trang
+      if (startDate && endDate) {
+        filter.createdAt = {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate)
+        };
+      }
+
+      if (processingCode && processingCode !== "all") {
+        filter["processing.code"] = processingCode;
+      }
+
+      // 2. Lấy danh sách từ RequestRecruitment với phân trang
       const sortOption: any = {};
       sortOption[sortBy] = sortOrder === "asc" ? 1 : -1;
 
-      // Thực hiện query với phân trang
       const result = await (RequestRecruitment as any).paginate(filter, {
         page,
         limit,
-        sort: sortOption,
+        sort: sortOption
       });
 
-      // Nếu không tìm thấy yêu cầu nào, trả về mảng rỗng
       if (!result.docs || result.docs.length === 0) {
         return response.status(200).json({
           status: 200,
@@ -1020,44 +1328,92 @@ class RequestRecruitmentController {
         });
       }
 
-      // Lấy ID của các yêu cầu
-      const requestIds = result.docs.map((req: { _id: string }) => req._id);
+      // 3. Lấy thông tin chi tiết từ các bảng khác
+      const requestIds = result.docs.map((req: any) => req._id);
 
-      // Tìm thông tin chi tiết từ DepartmentRecruitmentRequest
-      const departmentRequests = await DepartmentRecruitmentRequest.find({
-        requestId: { $in: requestIds },
+      const [departmentRequests, mfgReplaceRequests] = await Promise.all([
+        DepartmentRecruitmentRequest.find({ requestId: { $in: requestIds } }),
+        MfgReplaceRecruitmentRequest.find({ requestId: { $in: requestIds } }),
+      ]);
+
+      // 4. Tạo map để dễ dàng truy xuất thông tin chi tiết
+      const detailsMap = new Map();
+      
+      departmentRequests.forEach((dept: any) => {
+        detailsMap.set(dept.requestId.toString(), {
+          type: 'DEPARTMENT',
+          data: dept
+        });
       });
 
-      // Tạo map để dễ dàng truy xuất thông tin chi tiết
-      const departmentRequestMap = new Map();
-      departmentRequests.forEach((dept) => {
-        departmentRequestMap.set(dept.requestId.toString(), dept);
+      mfgReplaceRequests.forEach((mfgReplace: any) => {
+        detailsMap.set(mfgReplace.requestId.toString(), {
+          type: 'MFG_REPLACE',
+          data: mfgReplace
+        });
       });
 
-      // Biến đổi dữ liệu trước khi trả về
+   
+
+      // 5. Transform dữ liệu
       const transformedData = result.docs.map((req: any) => {
-        const deptRequest = departmentRequestMap.get(req._id.toString());
+        const details = detailsMap.get(req._id.toString());
+        const detailData = details?.data || {};
 
-        return {
+        const baseData = {
           _id: req._id,
-          requestId: req._id,
+          requestId: req,  // Giữ toàn bộ thông tin từ RequestRecruitment
           formType: req.formType,
-          nameForm: req.nameForm,
           status: req.status,
           createdBy: req.createdBy,
-          total: deptRequest?.total || 0,
-          positions: deptRequest?.positions || [],
+          processing: req.processing || [],
+          nameForm: req.nameForm,
           createdAt: req.createdAt,
-          updatedAt: req.updatedAt,
-          // Thông tin phê duyệt hiện tại nếu có
-          currentApprovalInfo:
-            deptRequest?.levelApproval && deptRequest.levelApproval.length > 0
-              ? deptRequest.levelApproval.find(
-                  (level: any) => level.status === "pending"
-                ) ||
-                deptRequest.levelApproval[deptRequest.levelApproval.length - 1]
-              : null,
+          updatedAt: req.updatedAt
         };
+
+        switch(details?.type) {
+          case 'DEPARTMENT':
+            return {
+              ...baseData,
+              total: detailData.total || 0,
+              positions: detailData.positions || [],
+              hrAnswer: detailData.hrAnswer,
+              levelApproval: detailData.levelApproval,
+              currentApprovalInfo: detailData.levelApproval?.find(
+                (level: any) => level.status === "pending"
+              ) || detailData.levelApproval?.[detailData.levelApproval.length - 1]
+            };
+
+          case 'MFG_REPLACE':
+            return {
+              ...baseData,
+              year: detailData.year,
+              month: detailData.month,
+              recCode: detailData.recCode,
+              division: detailData.division,
+              department: detailData.department,
+              position: detailData.position,
+              grade: detailData.grade,
+              quantity: detailData.quantity,
+              replacement: detailData.replacement || [],
+              levelApproval: detailData.levelApproval,
+              currentApprovalInfo: detailData.levelApproval?.find(
+                (level: any) => level.status === "pending"
+              ) || detailData.levelApproval?.[detailData.levelApproval.length - 1]
+            };
+
+          case 'MFG':
+            return {
+              ...baseData,
+              year: detailData.year,
+              month: detailData.month,
+              requestByLine: detailData.requestByLine || []
+            };
+
+          default:
+            return baseData;
+        }
       });
 
       return response.status(200).json({
@@ -1079,39 +1435,91 @@ class RequestRecruitmentController {
       console.error("Error in getUserRequests:", error);
       return response.status(500).json({
         status: 500,
-        message:
-          "Đã xảy ra lỗi khi lấy danh sách yêu cầu tuyển dụng của người dùng",
+        message: "Đã xảy ra lỗi khi lấy danh sách yêu cầu tuyển dụng của người dùng",
         error: error.message,
       });
     }
   }
   @Put("/update-processing/:id")
   @HttpCode(200)
-  async updateProcessing(@Param("id") id: string, @Body() data: any, @Res() response: Response) {
+  async updateProcessing(
+    @Param("id") id: string,
+    @Body() data: any,
+    @Res() response: Response
+  ) {
     try {
       const sessionStart: any = await this.uow.start();
-      if (!sessionStart) {  
+      if (!sessionStart) {
         throw new Error("Session failed to start");
       }
+      
       const existingRequest = await RequestRecruitment.findById(id);
       if (!existingRequest) {
-        return response.status(404).json({  
+        return response.status(404).json({
           status: 404,
           message: "Không tìm thấy yêu cầu tuyển dụng",
           data: null,
         });
       }
-      if(data.processing) existingRequest.processing = data.processing; 
+      if (data.processing) {
+        existingRequest.processing = {
+          title: data.processing.title,
+          code: data.processing.code,
+        }
+      }
       await existingRequest.save({ session: sessionStart });
+
+      // Gửi thông báo cho người tạo yêu cầu
+      const userNotification: any = {
+        title: "Trạng thái xử lý yêu cầu đã được cập nhật",
+        content: `Yêu cầu của bạn đã được cập nhật trạng thái xử lý thành: ${data.processing}`,
+        type: "PROCESSING_UPDATED",
+        userId: existingRequest.createdBy?.userId || "",
+        role: "USER",
+        requestId: id,
+        requestType: "DEPARTMENT",
+        isRead: false,
+        metadata: {
+          requestTitle: existingRequest.nameForm?.title || "",
+          requesterName: existingRequest.createdBy?.RequesterName || "",
+          requesterCode: existingRequest.createdBy?.RequesterCode || "",
+          processingStatus: data.processing,
+          link: `/${id}`
+        }
+      };
+
+      await this.notiService.create(userNotification as INoti, this.uow, sessionStart);
+
+      // Gửi thông báo cho admin
+      const adminNotification: any = {
+        title: "Trạng thái xử lý yêu cầu đã được cập nhật",
+        content: `Yêu cầu tuyển dụng đã được cập nhật trạng thái xử lý thành: ${data.processing}`,
+        type: "PROCESSING_UPDATED",
+        userId: "ADMIN_ID",
+        role: "ADMIN",
+        requestId: id,
+        requestType: "DEPARTMENT",
+        isRead: false,
+        metadata: {
+          requestTitle: existingRequest.nameForm?.title || "",
+          requesterName: existingRequest.createdBy?.RequesterName || "",
+          requesterCode: existingRequest.createdBy?.RequesterCode || "",
+          processingStatus: data.processing,
+          link: `/${id}`
+        }
+      };
+
+      await this.notiService.create(adminNotification as INoti, this.uow, sessionStart);
+
       await this.uow.commit();
       return response.status(200).json({
-        status: 200,  
+        status: 200,
         message: "Cập nhật trạng thái xử lý thành công",
         data: existingRequest,
       });
     } catch (error: any) {
       console.error("Error in updateProcessing:", error);
-      await this.uow.rollback();  
+      await this.uow.rollback();
       return response.status(500).json({
         status: 500,
         message: "Đã xảy ra lỗi khi cập nhật trạng thái xử lý",
