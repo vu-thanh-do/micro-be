@@ -84,16 +84,35 @@ export class LanguageService extends GenericService<ILanguage> {
       return error;
     }
   }
-  async getGroup() {
+  async getGroup(page: number = 1, limit: number = 10) {
     try {
-      const groups = await Language.aggregate([
+      const customLabels = {
+        totalDocs: 'total',
+        docs: 'data',
+        limit: 'perPage',
+        page: 'currentPage',
+        nextPage: 'next',
+        prevPage: 'prev',
+        totalPages: 'pageCount',
+        pagingCounter: 'slNo',
+        meta: 'paginator'
+      };
+      
+      const options = {
+        page: page,
+        limit: limit,
+        customLabels: customLabels
+      };
+      
+      const aggregateQuery = Language.aggregate([
         { $match: { group: { $ne: null, $exists: true } } },
         { $group: { _id: "$group", count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-        { $project: { nameGroup: "$_id", count: 1, _id: 0 } }, 
+        { $project: { nameGroup: "$_id", count: 1, _id: 0 } }
       ]);
-
-      return groups;
+      
+      const result = await Language.aggregatePaginate(aggregateQuery, options);
+      return result;
     } catch (error) {
       console.log(error, "error");
       return error;

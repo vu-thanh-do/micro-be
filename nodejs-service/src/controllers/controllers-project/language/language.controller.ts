@@ -66,7 +66,8 @@ class LanguageController {
   @Get("/get-all-group")
   @HttpCode(200)
   async getAllGroup(@Req() request: Request, @Res() response: Response) {
-    const dataLanguage = await this.languageService.getGroup();
+    const { page = 1, limit = 10 } = request.query;
+    const dataLanguage = await this.languageService.getGroup(Number(page), Number(limit));
     return response.send(
       this.responseDataService.createResponse(200, dataLanguage, "success")
     );

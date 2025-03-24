@@ -40,7 +40,11 @@ export class NotificationService extends GenericService<INoti> {
   }
 
   async getNotifications(filter: any, options: any) {
-    return await (Notification as any).paginate(filter, options);
+    return await (Notification as any).paginate(filter, {
+      page: options.page || 1,
+      limit: options.limit || 10,
+      sort: options.sort || { createdAt: -1 }
+    });
   }
 
   async markAsRead(id: string, session: any) {

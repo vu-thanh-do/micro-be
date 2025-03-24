@@ -17,6 +17,7 @@ import { Request, Response } from "express";
 import MfgReplaceRecruitmentRequest from "../../../models/models-project/mfgReplaceRecruitmentRequest.model";
 import RequestRecruitment from "../../../models/models-project/requestRecruitment.model";
 import ApprovalHistory from "../../../models/models-project/approvalHistory.model";
+import mongoose from "mongoose";
 
 interface IMfgReplaceRequest {
   userId: string;
@@ -249,9 +250,12 @@ class MfgReplaceRecuitmentController {
   @HttpCode(200)
   async getRequestById(@Param("id") id: string, @Res() response: Response) {
     try {
+      console.log(1,id)
       // Lấy thông tin chi tiết yêu cầu tuyển dụng
-      const mfgRequest = await MfgReplaceRecruitmentRequest.findById(id).populate("requestId");
-      
+      const mfgRequest = await MfgReplaceRecruitmentRequest.findOne({ 
+        requestId: new mongoose.Types.ObjectId(id) 
+      }).populate("requestId");
+        
       if (!mfgRequest) {
         return response.status(404).json({
           status: 404,
@@ -269,7 +273,7 @@ class MfgReplaceRecuitmentController {
         status: 200,
         message: "Lấy thông tin yêu cầu tuyển dụng thay thế MFG thành công",
         data: {
-          requestInfo: mfgRequest.requestId,
+          requestInfo: (mfgRequest as any).requestId,
           mfgRequest: mfgRequest,
           approvalHistory: approvalHistory,
         },
@@ -825,6 +829,7 @@ class MfgReplaceRecuitmentController {
       });
     }
   }
+
 }
 
 export default MfgReplaceRecuitmentController;  

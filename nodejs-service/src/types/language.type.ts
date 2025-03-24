@@ -7,3 +7,4 @@ export interface ILanguage extends Document {
   Title: object;
   data: object;
 }
+export interface ILanguageDocument extends Document, ILanguage {}

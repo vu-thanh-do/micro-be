@@ -48,8 +48,8 @@ export class ResignController {
                 status: 200,
                 message: "thành công",
                 data: {
-                    arrEmployeeInfo,
-                    dataEzv4
+                   specificInfo: arrEmployeeInfo,
+                    infoEzv4: dataEzv4.data
                 },
             });
         } catch (error: any) {

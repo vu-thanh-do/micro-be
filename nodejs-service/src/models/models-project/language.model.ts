@@ -1,9 +1,10 @@
 import mongoose, { Model, PaginateModel } from "mongoose";
 import { INoti } from "../../types/noti.type";
 import mongoosePaginate from "mongoose-paginate-v2";
-import { IMasterData } from "../../types/masterData.type";
-import { ILanguage } from "../../types/language.type";
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
+import { IMasterData } from "../../types/masterData.type";
+import { ILanguage, ILanguageDocument } from "../../types/language.type";
 const LanguageSchema = new mongoose.Schema(
   {
     group: {
@@ -27,7 +28,12 @@ const LanguageSchema = new mongoose.Schema(
   }
 );
 LanguageSchema.plugin(mongoosePaginate);
-const Language: Model<ILanguage> = mongoose.model<ILanguage>(
+LanguageSchema.plugin(mongooseAggregatePaginate);
+
+interface LanguageModel extends 
+  mongoose.PaginateModel<ILanguageDocument>,
+  mongoose.AggregatePaginateModel<ILanguageDocument> {}
+  const Language = mongoose.model<ILanguage, LanguageModel>(
   "Language",
   LanguageSchema
 );

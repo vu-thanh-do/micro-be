@@ -494,7 +494,7 @@ class RequestRecruitmentController {
 
       // 3. Kiểm tra cấp phê duyệt hiện tại
       const currentLevelIndex = departmentRequest.levelApproval.findIndex(
-        (level) => level.level === data.level
+        (level: any) => level.level === data.level
       );
 
       if (currentLevelIndex === -1) {
@@ -569,7 +569,7 @@ class RequestRecruitmentController {
       } else if (data.status === "approved") {
         // Kiểm tra xem đây có phải là cấp cuối cùng không
         const maxLevel = Math.max(
-          ...departmentRequest.levelApproval.map((level) => level.level || 0)
+          ...departmentRequest.levelApproval.map((level: any) => level.level || 0)
         );
         const isLastLevel = data.level === maxLevel;
 
@@ -596,7 +596,7 @@ class RequestRecruitmentController {
           // Tìm cấp phê duyệt tiếp theo
           const nextLevel = data.level + 1;
           const nextLevelIndex = departmentRequest.levelApproval.findIndex(
-            (level) => level.level === nextLevel
+            (level: any) => level.level === nextLevel
           );
 
           if (nextLevelIndex !== -1) {
@@ -741,7 +741,7 @@ class RequestRecruitmentController {
             data.level ===
             Math.max(
               ...departmentRequest.levelApproval.map(
-                (level) => level.level || 0
+                (level: any) => level.level || 0
               )
             ),
           nextApprover: data.nextApproverCode
@@ -830,7 +830,7 @@ class RequestRecruitmentController {
 
         // Tìm cấp phê duyệt của người dùng hiện tại
         const userApprovalLevel = levelApproval.find(
-          (level) => level.EmployeeId === approverId && level.status === null
+          (level: any) => level.EmployeeId === approverId && level.status === null
         );
 
         return {
@@ -1188,7 +1188,7 @@ class RequestRecruitmentController {
 
       // Gửi thông báo cho người phê duyệt hiện tại
       const currentApprover = existingDepartmentRequest.levelApproval.find(
-        level => level.status === "pending"
+        (level: any) => level.status === "pending"
       );
 
       if (currentApprover) {

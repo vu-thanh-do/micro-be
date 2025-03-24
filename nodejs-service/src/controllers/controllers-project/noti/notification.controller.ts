@@ -65,8 +65,41 @@ class NotificationController {
   @Get("/admin")
   @HttpCode(200)
   async getNotiAdmin(@Req() request: Request, @Res() response: Response) {
-    const dataNoti = await this.notiService.getNotifications( {role: "ADMIN"}, {sort: { createdAt: -1 }});
-    return response.send(dataNoti);
+    try {
+      const page = parseInt(request.query.page as string) || 1; 
+      const limit = parseInt(request.query.limit as string) || 10;
+      
+      const dataNoti = await this.notiService.getNotifications(
+        { role: "ADMIN" }, 
+        {
+          page,
+          limit,
+          sort: { createdAt: -1 }
+        }
+      );
+
+      return response.status(200).json({
+        status: 200,
+        message: "Lấy danh sách thông báo thành công",
+        data: dataNoti.docs,
+        pagination: {
+          totalDocs: dataNoti.totalDocs,
+          limit: dataNoti.limit,
+          totalPages: dataNoti.totalPages,
+          page: dataNoti.page,
+          hasPrevPage: dataNoti.hasPrevPage,
+          hasNextPage: dataNoti.hasNextPage,
+          prevPage: dataNoti.prevPage,
+          nextPage: dataNoti.nextPage
+        }
+      });
+    } catch (error: any) {
+      return response.status(500).json({
+        status: 500,
+        message: "Đã xảy ra lỗi khi lấy danh sách thông báo",
+        error: error.message
+      });
+    }
   }
   @Get("/users/:userId")
   @HttpCode(200)

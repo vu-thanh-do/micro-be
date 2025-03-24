@@ -39,7 +39,8 @@ const SERVICES = {
   FILE_SERVICE: "http://localhost:3345",
   REQUEST_RECRUITMENT_SERVICE: "http://localhost:4001",
   LINE_MFG_SERVICE: "http://localhost:4001",
-
+  NOTI_SERVICE: "http://localhost:4001",
+  RESIGN_SERVICE: "http://localhost:4001"
 };
 
 // Debug middleware to log all requests
@@ -141,9 +142,12 @@ app.get('/role/get-role', createServiceProxy(
   10000
 ));
 
-app.get('/role/get-role-by-id/:id', createServiceProxy(
+app.get('/api/get-role-by-id/:id', createServiceProxy(
   SERVICES.AUTH_SERVICE,
-  { '^/role/get-role-by-id/:id': '/api/get-role-by-id/:id' },
+  { '^/role/get-role-by-id/:id': (path, req)   => {
+    const query = new URLSearchParams(req.query).toString();
+    return `/role/get-role-by-id/${req.params.id}${query ? '?' + query : ''}`;
+  } },
   10000
 ));
 
@@ -289,6 +293,13 @@ app.get('/language', createServiceProxy(
       return `/language${query ? '?' + query : ''}`;
     }
   }
+));
+app.get('/language/get-all-group', createServiceProxy(
+  SERVICES.LANGUAGE_SERVICE,
+  { '^/language/get-all-group':(path, req)   => {
+    const query = new URLSearchParams(req.query).toString();
+    return `/language/get-all-group${query ? '?' + query : ''}`;
+  } }
 ));
 // all request recruitment
 app.get('/requestRecruitment/department/get-all', createServiceProxy(
@@ -606,7 +617,29 @@ app.get('/lineMfg/downloadTemplate', createServiceProxy(
 ));   
 // code approval
 
-
+// resign
+app.post('/resign/getInfoResign',async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.RESIGN_SERVICE}/resign/getInfoResign`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Get Info Resign Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to get info resign",
+      data: null
+    });
+  }
+});
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
@@ -622,7 +655,36 @@ app.get('/health', (req, res) => {
     }
   });
 });
-
+// noti 
+app.get('/notifications/admin', createServiceProxy(
+  SERVICES.NOTI_SERVICE,
+  { '^/notifications/admin': (path, req ) => {
+    const query = new URLSearchParams(req.query).toString();
+    return `/notifications/admin${query ? '?' + query : ''}`;
+  } }
+));
+app.post('/notifications/mark-read/:id', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.NOTI_SERVICE}/notifications/mark-read/${req.params.id}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Mark Read Notification Error:', error);
+    return res.status(500).json({ 
+      code: 500,  
+      status: "Error",
+      message: "Failed to mark read notification",
+      data: null
+    });
+  }
+} );  
 // 404 handler
 app.use((_req, res) => {
   res.status(404).json({
