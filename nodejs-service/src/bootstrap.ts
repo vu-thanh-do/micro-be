@@ -41,5 +41,6 @@ dotenv.config();
 app.use(express.json());
 connectRabbitMQ();
 connectDb();
+
 ConnectSqlServer();
 export default app;

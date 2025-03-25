@@ -91,6 +91,7 @@ class ResignInfoEzv4 {
           e.EmployeeCode,
           e.FullName,
           e.Email,
+          e.JoinDate,
           r.Detail,
           r.DaysOfNotification,
           r.IsLegal,

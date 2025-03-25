@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URGENT: Approval Request Reminder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 0;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: right;
+            padding: 15px 20px;
+            position: relative;
+        }
+        .logo {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+        }
+        .confidential-bar {
+            background-color: #f5f5f5;
+            padding: 8px 20px;
+            color: #666;
+            font-size: 12px;
+            text-align: right;
+            border-top: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+        }
+        .title-bar {
+            background-color: #a02c2c; /* Urgent red color */
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            margin-top: 15px;
+            position: relative;
+        }
+        .title-bar h2 {
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        .document-seal {
+            position: absolute;
+            width: 120px;
+            right: 0;
+            top: 50;
+            height: 120px;
+            opacity: 0.2;
+            pointer-events: none;
+          }
+        .content {
+            padding: 30px 20px;
+        }
+        .reminder-alert {
+            background-color: #ffeaea;
+            border: 2px solid #a02c2c;
+            padding: 15px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .reminder-alert h3 {
+            color: #a02c2c;
+            margin-top: 0;
+        }
+        .counter {
+            font-size: 18px;
+            font-weight: bold;
+            color: #a02c2c;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+        }
+        .info-table th, .info-table td {
+            padding: 12px;
+            border: 1px solid #ddd;
+        }
+        .info-table th {
+            background-color: #f5f5f5;
+            text-align: left;
+            width: 40%;
+            color: #333;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 25px;
+            background-color: #a02c2c; /* Urgent red color */
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .button:hover {
+            background-color: #8a2424;
+        }
+        .note {
+            background-color: #ffeaea;
+            padding: 15px;
+            border-left: 4px solid #a02c2c;
+            margin-top: 25px;
+        }
+        .importance {
+            color: #a02c2c;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 40px;
+            padding: 15px 20px;
+            border-top: 1px solid #ddd;
+            font-size: 12px;
+            color: #666;
+            background-color: #f5f5f5;
+        }
+        .divider {
+            border-top: 1px solid #a02c2c;
+            margin: 10px 0;
+        }
+        .escalation-notice {
+            font-weight: bold;
+            padding: 10px;
+            margin-top: 20px;
+            background-color: #fffbcc;
+            border: 1px solid #e6db55;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+     
+        <div class="confidential-bar">
+            CONFIDENTIAL - FOR INTERNAL USE ONLY
+        </div>
+        
+        <div class="title-bar">
+            <h2>URGENT: APPROVAL REMINDER</h2>
+            <svg
+            class="document-seal"
+            viewBox="0 0 100 100"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="50"
+              cy="50"
+              r="45"
+              fill="none"
+              stroke="#00205B"
+              stroke-width="2"
+            />
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              fill="none"
+              stroke="#00205B"
+              stroke-width="1"
+            />
+            <text
+              x="50"
+              y="40"
+              text-anchor="middle"
+              font-family="Times New Roman"
+              font-size="10"
+              font-weight="bold"
+              fill="#00205B"
+            >
+              DENSO
+            </text>
+            <text
+              x="50"
+              y="50"
+              text-anchor="middle"
+              font-family="Times New Roman"
+              font-size="10"
+              font-weight="bold"
+              fill="#00205B"
+            >
+              MANUFACTURING
+            </text>
+            <text
+              x="50"
+              y="60"
+              text-anchor="middle"
+              font-family="Times New Roman"
+              font-size="10"
+              font-weight="bold"
+              fill="#00205B"
+            >
+              VIETNAM
+            </text>
+            <text
+              x="50"
+              y="70"
+              text-anchor="middle"
+              font-family="Times New Roman"
+              font-size="10"
+              font-weight="bold"
+              fill="#00205B"
+            >
+              CO.,LTD.
+            </text>
+          </svg>
+        </div>
+        
+        <div class="content">
+            <div class="reminder-alert">
+                <h3>ATTENTION REQUIRED</h3>
+                <p>This request has been awaiting your approval for <span class="counter">[X]</span> days.</p>
+                <p>Your immediate action is required to avoid process delays.</p>
+            </div>
+            
+            <p>Dear <strong>[Approver Name]</strong>,</p>
+            
+            <div class="divider"></div>
+            
+            <p>This is a <strong>follow-up reminder</strong> regarding a pending approval in the recruitment system. Your approval is <span class="importance">critically needed</span> to proceed with the hiring process:</p>
+            
+            <table class="info-table">
+                <tr>
+                    <th>Approval Type:</th>
+                    <td>Recruitment Request</td>
+                </tr>
+                <tr>
+                    <th>Approval ID:</th>
+                    <td>[Approval ID]</td>
+                </tr>
+                <tr>
+                    <th>Request Creator:</th>
+                    <td>[Creator Name]</td>
+                </tr>
+                <tr>
+                    <th>Department:</th>
+                    <td>[Department Name]</td>
+                </tr>
+                <tr>
+                    <th>Creation Date:</th>
+                    <td>[Day/Month/Year]</td>
+                </tr>
+                <tr>
+                    <th>Reminder Count:</th>
+                    <td>[Number of reminders sent]</td>
+                </tr>
+            </table>
+            
+            <p class="importance">This request has exceeded the standard 48-hour approval timeframe and is now delaying the recruitment process.</p>
+            
+            <div class="escalation-notice">
+                Please note: If no action is taken within 24 hours, this matter will be escalated to senior management per company policy.
+            </div>
+            
+            <p>To complete your approval, please click on the link below:</p>
+            
+            <div style="text-align: center;">
+                <a href="[Approval system link]" class="button">IMMEDIATE APPROVAL REQUIRED</a>
+            </div>
+            
+            <div class="note">
+                <strong>Note:</strong> This is an automated reminder from the system. Timely approval is essential for operational efficiency. If you have already approved this request, please disregard this message.
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© 2025 DENSO MANUFACTURING VIETNAM CO.,LTD. All rights reserved.</p>
+            <p>This email was sent from the recruitment management system of DENSO MANUFACTURING VIETNAM CO.,LTD.</p>
+            <p>The information in this email may be confidential and is intended only for the designated recipient.</p>
+        </div>
+    </div>
+</body>
+</html>

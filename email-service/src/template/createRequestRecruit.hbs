@@ -1,3 +1,107 @@
-<!-- welcome.hbs -->
-<h1>Hello, {{name}}!</h1>
-<p>Welcome to our platform. We are excited to have you on board.</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recruitment Request Creation Notification</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9f9f9;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f9f9f9;">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <!-- Main container -->
+                <table width="700" cellpadding="0" cellspacing="0" border="0" style="background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                    <!-- Confidential bar -->
+                    <tr>
+                        <td style="background-color: #f5f5f5; padding: 8px 20px; color: #666; font-size: 12px; text-align: right; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd;">
+                            CONFIDENTIAL - FOR INTERNAL USE ONLY
+                        </td>
+                    </tr>
+                    
+                    <!-- Title bar -->
+                    <tr>
+                        <td style="background-color: #D4AF37; color: #fff; padding: 20px; text-align: center; position: relative;">
+                            <!-- Document seal as embeddable image - Giải pháp 1: Sử dụng base64 cho SVG -->
+                            <div style="position: absolute; right: 10px; top: 10px; width: 120px; height: 120px; opacity: 0.2;">
+                                <img src="data:image/png;base64,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" alt="DENSO seal" width="120" height="120" style="opacity: 0.2;">
+                            </div>
+                            
+                            <h2 style="margin: 0; font-weight: 600; letter-spacing: 1px;">RECRUITMENT REQUEST CREATION NOTIFICATION</h2>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 30px 20px; position: relative;">
+                            <!-- Confidential watermark - Giải pháp sử dụng background image -->
+                            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
+                                <table width="100%" height="100%" cellpadding="0" cellspacing="0" border="0">
+                                    <tr>
+                                        <td align="center" valign="middle">
+                                            <div style="font-size: 80px; color: rgba(0, 0, 0, 0.05); font-weight: bold; transform: rotate(-45deg); -webkit-transform: rotate(-45deg); -ms-transform: rotate(-45deg);">CONFIDENTIAL</div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            
+                            <!-- Actual content in a separate table to ensure it's on top of the watermark -->
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="position: relative; z-index: 2;">
+                                <tr>
+                                    <td>
+                                        <p>Dear Sir/Madam,</p>
+                                        <div style="border-top: 1px solid #D4AF37; margin: 10px 0;"></div>
+                                        <p>The system would like to inform you that your recruitment request has been successfully created with the following details:</p>
+                                        
+                                        <!-- Info table -->
+                                        <table width="100%" cellpadding="0" cellspacing="0" border="1" style="border-collapse: collapse; margin: 25px 0; border-color: #ddd;">
+                                            <tr>
+                                                <th style="padding: 12px; background-color: #f8f4e5; width: 40%; color: #333; text-align: left;">Request Creator:</th>
+                                                <td style="padding: 12px;">[Creator Name]</td>
+                                            </tr>
+                                            <tr>
+                                                <th style="padding: 12px; background-color: #f8f4e5; width: 40%; color: #333; text-align: left;">Recruitment Request ID:</th>
+                                                <td style="padding: 12px;">[Request ID]</td>
+                                            </tr>
+                                            <tr>
+                                                <th style="padding: 12px; background-color: #f8f4e5; width: 40%; color: #333; text-align: left;">Position:</th>
+                                                <td style="padding: 12px;">[Position Name]</td>
+                                            </tr>
+                                            <tr>
+                                                <th style="padding: 12px; background-color: #f8f4e5; width: 40%; color: #333; text-align: left;">Creation Time:</th>
+                                                <td style="padding: 12px;">[Day/Month/Year - Hour:Minute]</td>
+                                            </tr>
+                                            <tr>
+                                                <th style="padding: 12px; background-color: #f8f4e5; width: 40%; color: #333; text-align: left;">Status:</th>
+                                                <td style="padding: 12px;">Pending Approval</td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <p>To track the progress of your recruitment request, please click on the link below:</p>
+                                        
+                                        <div style="text-align: center; margin: 20px 0;">
+                                            <a href="[Progress tracking link]" style="display: inline-block; padding: 12px 25px; background-color: #D4AF37; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">Track Progress</a>
+                                        </div>
+                                        
+                                        <div style="background-color: #f8f4e5; padding: 15px; border-left: 4px solid #D4AF37; margin-top: 25px;">
+                                            <strong>Note:</strong> This is an automated email sent from the system. Please do not reply to this email.
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 15px 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; background-color: #f5f5f5;">
+                            <p style="margin: 5px 0;">© 2025 DENSO MANUFACTURING VIETNAM CO.,LTD. All rights reserved.</p>
+                            <p style="margin: 5px 0;">This email was sent from the recruitment management system of DENSO MANUFACTURING VIETNAM CO.,LTD.</p>
+                            <p style="margin: 5px 0;">The information in this email may be confidential and is intended only for the designated recipient.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

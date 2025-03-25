@@ -37,6 +37,7 @@ interface IRecruitmentRequest {
   RequesterSection: string;
   formType?: string;
   nameForm?: any;
+  deptCode?: string;
 }
 
 // Interface cho dữ liệu phê duyệt
@@ -91,6 +92,7 @@ class RequestRecruitmentController {
           RequesterSection: data.RequesterSection || "",
         },
         nameForm: data.nameForm || { title: "Yêu cầu tuyển dụng" },
+        deptCode: data.deptCode || "",
       };
 
       const requestRecruitment = new RequestRecruitment(requestData);

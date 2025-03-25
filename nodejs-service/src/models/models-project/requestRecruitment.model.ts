@@ -23,6 +23,7 @@ const requestSchema = new mongoose.Schema({
   nameForm: { type: Object, required: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
+  deptCode: { type: String },
 });
 requestSchema.plugin(mongoosePaginate);
 const RequestRecruitment = mongoose.model("RequestRecruitment", requestSchema);

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recruitment Request Completion Notification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 0;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .header {
+            text-align: right;
+            padding: 15px 20px;
+            position: relative;
+        }
+        .logo {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+        }
+        .confidential-bar {
+            background-color: #f5f5f5;
+            padding: 8px 20px;
+            color: #666;
+            font-size: 12px;
+            text-align: right;
+            border-top: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+        }
+        .title-bar {
+            position: relative;
+            background-color: #D4AF37; /* Golden dragon color */
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            margin-top: 15px;
+        }
+        .document-seal {
+            position: absolute;
+            width: 120px;
+            right: 0;
+            top: 50;
+            height: 120px;
+            opacity: 0.2;
+            pointer-events: none;
+        }
+        .title-bar h2 {
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        .content {
+            padding: 30px 20px;
+            position: relative;
+        }
+        .confidential-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 80px;
+            color: rgba(0, 0, 0, 0.05);
+            font-weight: bold;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 100;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            position: relative;
+            z-index: 2;
+        }
+        .info-table th, .info-table td {
+            padding: 12px;
+            border: 1px solid #ddd;
+        }
+        .info-table th {
+            background-color: #f8f4e5; /* Light gold background */
+            text-align: left;
+            width: 40%;
+            color: #333;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 25px;
+            background-color: #D4AF37; /* Golden dragon color */
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px 0;
+            font-weight: bold;
+            position: relative;
+            z-index: 2;
+        }
+        .button:hover {
+            background-color: #c4a030;
+        }
+        .note {
+            background-color: #f8f4e5; /* Light gold background */
+            padding: 15px;
+            border-left: 4px solid #D4AF37; /* Golden dragon color */
+            margin-top: 25px;
+            position: relative;
+            z-index: 2;
+        }
+        .footer {
+            margin-top: 40px;
+            padding: 15px 20px;
+            border-top: 1px solid #ddd;
+            font-size: 12px;
+            color: #666;
+            background-color: #f5f5f5;
+            position: relative;
+            z-index: 2;
+        }
+        .divider {
+            border-top: 1px solid #D4AF37; /* Golden dragon color */
+            margin: 10px 0;
+            position: relative;
+            z-index: 2;
+        }
+        .success-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background-color: #4CAF50;
+            border-radius: 50%;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        .success-status {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .summary-box {
+            background-color: #f8f4e5;
+            border: 1px solid #D4AF37;
+            padding: 15px;
+            margin-top: 25px;
+            border-radius: 4px;
+            position: relative;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="confidential-bar">
+            CONFIDENTIAL - FOR INTERNAL USE ONLY
+        </div>
+        
+        <div class="title-bar">
+            <h2>RECRUITMENT REQUEST COMPLETION NOTIFICATION</h2>
+            <svg
+            class="document-seal"
+            viewBox="0 0 100 100"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="50"
+              cy="50"
+              r="45"
+              fill="none"
+              stroke="#00205B"
+              stroke-width="2"
+            />
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              fill="none"
+              stroke="#00205B"
+              stroke-width="1"
+            />
+            <text
+              x="50"
+              y="40"
+              text-anchor="middle"
+              font-family="Times New Roman"
+              font-size="10"
+              font-weight="bold"
+              fill="#00205B"
+            >
+              DENSO
+            </text>
+            <text
+              x="50"
+              y="50"
+              text-anchor="middle"
+              font-family="Times New Roman"
+              font-size="10"
+              font-weight="bold"
+              fill="#00205B"
+            >
+              MANUFACTURING
+            </text>
+            <text
+              x="50"
+              y="60"
+              text-anchor="middle"
+              font-family="Times New Roman"
+              font-size="10"
+              font-weight="bold"
+              fill="#00205B"
+            >
+              VIETNAM
+            </text>
+            <text
+              x="50"
+              y="70"
+              text-anchor="middle"
+              font-family="Times New Roman"
+              font-size="10"
+              font-weight="bold"
+              fill="#00205B"
+            >
+              CO.,LTD.
+            </text>
+          </svg>
+        </div>
+        
+        <div class="content">
+            <div class="confidential-watermark">CONFIDENTIAL</div>
+            <p>Dear Sir/Madam,</p>
+            <div class="divider"></div>
+            <p>We are pleased to inform you that your recruitment request has been successfully completed.</p>
+            <table class="info-table">
+                <tr>
+                    <th>Request Creator:</th>
+                    <td>[Creator Name]</td>
+                </tr>
+                <tr>
+                    <th>Recruitment Request ID:</th>
+                    <td>[Request ID]</td>
+                </tr>
+                <tr>
+                    <th>Position:</th>
+                    <td>[Position Name]</td>
+                </tr>
+                <tr>
+                    <th>Creation Time:</th>
+                    <td>[Day/Month/Year - Hour:Minute]</td>
+                </tr>
+                <tr>
+                    <th>Completion Time:</th>
+                    <td>[Day/Month/Year - Hour:Minute]</td>
+                </tr>
+                <tr>
+                    <th>Status:</th>
+                    <td><span class="success-indicator"></span><span class="success-status">Completed</span></td>
+                </tr>
+            </table>
+            
+            <div class="summary-box">
+                <h3>Recruitment Summary:</h3>
+                <ul>
+                    <li>Number of candidates hired: [Number]</li>
+                    <li>Start date of new employees: [Date]</li>
+                    <li>Department: [Department Name]</li>
+                    <li>Hiring manager: [Manager Name]</li>
+                </ul>
+            </div>
+            
+            <p>To view the full details of the completed recruitment request, please click on the link below:</p>
+            
+            <div style="text-align: center;">
+                <a href="[Request details link]" class="button">View Full Details</a>
+            </div>
+            
+            <div class="note">
+                <strong>Note:</strong> This is an automated email sent from the system. Please do not reply to this email.
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© 2025 DENSO MANUFACTURING VIETNAM CO.,LTD. All rights reserved.</p>
+            <p>This email was sent from the recruitment management system of DENSO MANUFACTURING VIETNAM CO.,LTD.</p>
+            <p>The information in this email may be confidential and is intended only for the designated recipient.</p>
+        </div>
+    </div>
+</body>
+</html>

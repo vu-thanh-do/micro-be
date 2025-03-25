@@ -4,6 +4,8 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import { createProxyMiddleware } from "http-proxy-middleware";
+import sendEmailNotification from "./service/sendMail.js";
+import juice from 'juice';
 
 // Create an instance of Express app
 const app = express();
@@ -40,7 +42,8 @@ const SERVICES = {
   REQUEST_RECRUITMENT_SERVICE: "http://localhost:4001",
   LINE_MFG_SERVICE: "http://localhost:4001",
   NOTI_SERVICE: "http://localhost:4001",
-  RESIGN_SERVICE: "http://localhost:4001"
+  RESIGN_SERVICE: "http://localhost:4001",
+  SYNC_COMPANY_STRUCTURE_SERVICE: "http://localhost:4001"
 };
 
 // Debug middleware to log all requests
@@ -685,6 +688,50 @@ app.post('/notifications/mark-read/:id', async (req, res) => {
     });
   }
 } );  
+
+// mailer 
+app.post('/send-email', async (req, res) => {
+  try {
+    const result = await sendEmailNotification({
+      to: 'vu.thanh.do.a7y@ap.denso.com',
+      subject: 'Chào mừng bạn đến với hệ thống',
+      templateName: 'createRequestRecruit', // tương ứng với file `./template/welcome.hbs`
+      context: {
+        username: 'Nguyễn Văn A',
+        link: 'https://example.com/kich-hoat',
+      },
+    });
+    console.log(result);
+    return res.json('ok');
+  } catch (error) { 
+    console.error('Send Email Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to send email",
+      data: null
+    }); 
+  }
+});
+// sync company structure
+app.get('/sync-company-structure', createServiceProxy(
+  SERVICES.SYNC_COMPANY_STRUCTURE_SERVICE,
+  { '^/sync-company-structure': '/sync-company-structure' }
+));
+app.get('/sync-company-structure/all', createServiceProxy(
+  SERVICES.SYNC_COMPANY_STRUCTURE_SERVICE,
+  { '^/sync-company-structure/all': (path, req)     => {
+    const query = new URLSearchParams(req.query).toString();
+    return `/sync-company-structure/all${query ? '?' + query : ''}`;
+  } }
+));
+app.get('/sync-company-structure/search', createServiceProxy(
+  SERVICES.SYNC_COMPANY_STRUCTURE_SERVICE,
+  { '^/sync-company-structure/search': (path, req) => {
+    const query = new URLSearchParams(req.query).toString();
+    return `/sync-company-structure/search${query ? '?' + query : ''}`;
+  } }
+));
 // 404 handler
 app.use((_req, res) => {
   res.status(404).json({

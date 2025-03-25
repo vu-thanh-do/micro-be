@@ -26,6 +26,7 @@ import RequestRecruitmentController from "./controllers/controllers-project/requ
 import LineMfgController from "./controllers/controllers-project/lineMfg/LineMfg.controller";
 import MfgReplaceRecuitmentController from "./controllers/controllers-project/requestRecruitment/mfgReplaceRecuitment.controller";
 import { ResignController } from "./controllers/controllers-project/requestRecruitment/resign.controller";
+import { SyncCompanyStructureController } from "./controllers/controllers-project/syncCompanyStructure/syncCompanyStrucTure.controller";
 useContainer(container);
 const app = createExpressServer({
   cors: {
@@ -52,7 +53,8 @@ const app = createExpressServer({
     RequestRecruitmentController,
     LineMfgController,
     MfgReplaceRecuitmentController,
-    ResignController
+    ResignController,
+    SyncCompanyStructureController
   ],
 });
 

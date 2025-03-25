@@ -48,6 +48,7 @@ interface IMfgReplaceRequest {
   RequesterSection: string;
   formType?: string;
   nameForm?: any;
+  deptCode?: string;
 }
 
 interface IApprovalRequest {
@@ -100,6 +101,7 @@ class MfgReplaceRecuitmentController {
           RequesterSection: data.RequesterSection || "",
         },
         nameForm: data.nameForm || { title: "Yêu cầu tuyển dụng thay thế MFG" },
+        deptCode: data.deptCode || "",
       };
 
       const requestRecruitment = new RequestRecruitment(requestData);
