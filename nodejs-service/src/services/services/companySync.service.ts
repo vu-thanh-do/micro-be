@@ -41,7 +41,9 @@ export class CompanySyncService {
   async findByName(name: string) {
     return await CompanyStructure.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
   }
-
+  async findById(id: string) {
+    return await CompanyStructure.findOne({ _id: id });
+  }
   async getAllParents(department: any, result: any[] = []): Promise<any[]> {
     if (!department?.parentId) return result;
     const parent = await CompanyStructure.findOne({ _id: department.parentId });
@@ -61,14 +63,16 @@ export class CompanySyncService {
     }
     return result;
   }
-
+  async getOneChild(id: number):Promise<any> {
+    const children = await CompanyStructure.find({ parentId: id });
+    const result = [...children];
+    return result;
+  }
   async findDepartmentWithHierarchy(name: string) {
     const target = await this.findByName(name);
     if (!target) return null;
-
     const parents = await this.getAllParents(target);
     const children = await this.getAllChildren(target._id);
-
     return {
       target,
       parents: parents.reverse(), // từ trên xuống
@@ -83,5 +87,14 @@ export class CompanySyncService {
       sort: { orderId: 1 },
     });
     return result;
+  }
+  async findDepartmentChild(id: string) {
+    const target = await this.findById(id);
+    if (!target) return null;
+    const children = await this.getOneChild(target._id);
+    return {
+      target,
+      children,
+    };
   }
 }

@@ -659,6 +659,13 @@ app.get('/health', (req, res) => {
   });
 });
 // noti 
+app.get('/notifications/users/:id', createServiceProxy(
+  SERVICES.NOTI_SERVICE,
+  { '^/notifications/users/:id': (path, req) => {
+    const query = new URLSearchParams(req.query).toString();
+    return `/notifications/users/${req.params.id}${query ? '?' + query : ''}`;
+  } }
+));
 app.get('/notifications/admin', createServiceProxy(
   SERVICES.NOTI_SERVICE,
   { '^/notifications/admin': (path, req ) => {
@@ -730,6 +737,42 @@ app.get('/sync-company-structure/search', createServiceProxy(
   { '^/sync-company-structure/search': (path, req) => {
     const query = new URLSearchParams(req.query).toString();
     return `/sync-company-structure/search${query ? '?' + query : ''}`;
+  } }
+));
+app.get('/sumary-department/detail-sumary', createServiceProxy(
+  SERVICES.SYNC_COMPANY_STRUCTURE_SERVICE,
+  { '^/sumary-department/detail-sumary': (path, req) => {
+    const query = new URLSearchParams(req.query).toString();
+    return `/sumary-department/detail-sumary${query ? '?' + query : ''}`;
+  } }
+));
+app.post('/sumary-department/add-adjust', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.SYNC_COMPANY_STRUCTURE_SERVICE}/sumary-department/add-adjust`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Add Adjust Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to add adjust",
+      data: null
+    });
+  }
+});
+app.get('/sumary-department/info-headcount', createServiceProxy(  
+  SERVICES.SYNC_COMPANY_STRUCTURE_SERVICE,
+  { '^/sumary-department/info-headcount': (path, req) => {
+    const query = new URLSearchParams(req.query).toString();
+    return `/sumary-department/info-headcount${query ? '?' + query : ''}`;
   } }
 ));
 // 404 handler

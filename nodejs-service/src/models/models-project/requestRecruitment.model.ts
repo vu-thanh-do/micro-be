@@ -1,5 +1,27 @@
-import mongoose from "mongoose";
+import mongoose, { Document, PaginateDocument, PaginateModel } from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
+interface IRequestRecruitment extends Document {
+  formType: string;
+  status: string;
+  createdBy: {
+    userId: string;
+    name: string;
+    RequesterName: string;
+    RequesterCode: string;
+    RequesterPosition: string;
+    RequesterSection: string;
+  };
+  processing: {
+    code: string;
+    title: string;
+  };
+  nameForm: {
+    title : string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+  deptCode: string;
+}
 const requestSchema = new mongoose.Schema({
   formType: { type: String, required: true }, // Tên form, ví dụ: 'MFGNEW , YCTD'
   status: {
@@ -25,7 +47,11 @@ const requestSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
   deptCode: { type: String },
 });
-requestSchema.plugin(mongoosePaginate);
-const RequestRecruitment = mongoose.model("RequestRecruitment", requestSchema);
+requestSchema.plugin(mongoosePaginate); 
+interface IRequestRecruitmentPaginate<T extends Document> extends PaginateModel<T> {}
+const RequestRecruitment = mongoose.model<IRequestRecruitment, IRequestRecruitmentPaginate<IRequestRecruitment>>(
+  "RequestRecruitment",
+  requestSchema
+);
 
 export default RequestRecruitment;

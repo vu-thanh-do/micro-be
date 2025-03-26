@@ -25,6 +25,8 @@ import { ResignController } from "../controllers/controllers-project/requestRecr
 import ResignInfoEzv4 from "../services/service-Ezv4/resign";
 import { CompanySyncService } from "../services/services/companySync.service";
 import { SyncCompanyStructureController } from "../controllers/controllers-project/syncCompanyStructure/syncCompanyStrucTure.controller";
+import SumaryDepService from "../services/services/sumaryDep.service";
+import SumaryDepartmentController from "../controllers/controllers-project/sumaryHc/sumaryDepartment.controller";
 const container = new Container();
 // Bind dependencies
 container.bind<LoggerService>(LoggerService).toSelf();
@@ -41,6 +43,7 @@ container.bind<DepartmentEzV4>(DepartmentEzV4).toSelf();
 container.bind<LanguageService>(LanguageService).toSelf();
 container.bind<ResignInfoEzv4>(ResignInfoEzv4).toSelf();
 container.bind<CompanySyncService>(CompanySyncService).toSelf();
+container.bind<SumaryDepartmentController>(SumaryDepartmentController).toSelf();
 // bind controlelr
 container.bind<CodeApprovalController>(CodeApprovalController).toSelf();
 container.bind<RequireDataController>(RequireDataController).toSelf();
@@ -54,4 +57,5 @@ container.bind<LineMfgController>(LineMfgController).toSelf();
 container.bind<MfgReplaceRecuitmentController>(MfgReplaceRecuitmentController).toSelf();
 container.bind<ResignController>(ResignController).toSelf();
 container.bind<SyncCompanyStructureController>(SyncCompanyStructureController).toSelf();
+container.bind<SumaryDepService>(SumaryDepService).toSelf();
 export default container;
