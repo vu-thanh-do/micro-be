@@ -43,7 +43,7 @@ const SERVICES = {
   LINE_MFG_SERVICE: "http://localhost:4001",
   NOTI_SERVICE: "http://localhost:4001",
   RESIGN_SERVICE: "http://localhost:4001",
-  SYNC_COMPANY_STRUCTURE_SERVICE: "http://localhost:4001"
+  SYNC_COMPANY_STRUCTURE_SERVICE: "http://localhost:4001",
 };
 
 // Debug middleware to log all requests
@@ -96,7 +96,7 @@ const createServiceProxy = (targetUrl, pathRewrite = null, timeout = 30000) => {
 
 // Auth service routes with specific path rewrites
 // Login route
-app.post('/auth/login', async (req, res) => {
+app.post('/api/login', async (req, res) => {
   try {
     const response = await fetch(`${SERVICES.AUTH_SERVICE}/api/login`, {
       method: 'POST',
@@ -125,14 +125,39 @@ app.get('/auth/get-me', createServiceProxy(
   { '^/auth/get-me': '/api/get-user-from-token' },
   10000
 ));
-
+app.get('/api/get-user-from-token', createServiceProxy(
+  SERVICES.AUTH_SERVICE, 
+  { '^/auth/get-me': '/api/get-user-from-token' },
+  10000
+));
 // Refresh token route
 app.post('/auth/refreshToken', createServiceProxy(
   SERVICES.AUTH_SERVICE, 
   { '^/auth/refreshToken': '/api/refreshToken' },
   10000
 ));
-
+app.post('/api/refreshToken', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.AUTH_SERVICE}/api/refreshToken`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Refresh Token Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to refresh token",
+      data: null
+    });
+  }
+});
 // Get all users route
 app.get('/auth/get-all-users', createServiceProxy(
   SERVICES.AUTH_SERVICE, 
@@ -564,12 +589,111 @@ app.delete('/requestRecruitment/mfgReplace/:id', async (req, res) => {
     });
   }
 });
+// mfg new 
+app.post('/requestRecruitment/mfgNew/create', async (req, res) => {
+  try {
+    const response  = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/mfgNew/create`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Create Mfg New Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to create mfg new",
+      data: null
+    });   
+  }
+}); 
+app.get('/requestRecruitment/mfgNew/:id', createServiceProxy(
+  SERVICES.REQUEST_RECRUITMENT_SERVICE,
+  { '^/requestRecruitment/mfgNew/:id':(path, req)   => {
+    const query = new URLSearchParams(req.query).toString();
+    return `/requestRecruitment/mfgNew/${req.params.id}${query ? '?' + query : ''}`;
+  } }
+));
+app.put('/requestRecruitment/mfgNew/edit/:id', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/mfgNew/edit/${req.params.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'  
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Edit Mfg New Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to edit mfg new",    
+      data: null
+    });
+  }
+});
+app.post('/requestRecruitment/mfgNew/approve', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/mfgNew/approve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },  
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Approve Mfg New Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to approve mfg new",
+      data: null
+    });
+  }
+});
+app.put('/requestRecruitment/mfgNew/revise/:id', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/mfgNew/revise/${req.params.id}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout  
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Revise Mfg New Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to revise mfg new",
+      data: null
+    });
+  }
+});
 
 
 // Form Template routes
-app.get('/formTemplate', createServiceProxy(
+app.get('/formTemplate/get-name-structure', createServiceProxy(
   SERVICES.FORM_TEMPLATE_SERVICE,
-  { '^/formTemplate': '/formTemplate' }
+  { '^/formTemplate/get-name-structure':(path, req) => {
+    const query = new URLSearchParams(req.query).toString();
+    return `/formTemplate/get-name-structure${query ? '?' + query : ''}`;
+  } }
 ));
 // Line Mfg routes
 app.get('/lineMfg/getAllLineMfg', createServiceProxy(

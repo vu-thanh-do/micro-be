@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Response Table</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-blue-100 p-4">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header Link -->
+        <div class="text-right mb-1 text-blue-800 font-medium">
+            Link theo TCTD
+        </div>
+        <!-- Main Table -->
+        <table class="w-full border-collapse border border-gray-800 bg-white">
+            <!-- First row -->
+            <tr>
+                <td rowspan="3" class="border border-gray-800 p-2">Total no. of requirement</td>
+                <td colspan="6" class="border border-gray-800 p-2 text-center">HR respond</td>
+                <td rowspan="3" class="border border-gray-800 p-2">Balance No.</td>
+            </tr>
+            
+            <!-- Second row -->
+            <tr>
+                <td rowspan="2" class="border border-gray-800 p-2">Entry date</td>
+                <td colspan="2" class="border border-gray-800 p-2 bg-red-100 text-center">Pass Interview No.</td>
+                <td rowspan="2" class="border border-gray-800 p-2 bg-red-100 text-center">
+                    Pass health<br>
+                    checking No.
+                </td>
+                <td rowspan="2" class="border border-gray-800 p-2 bg-red-100 text-center">
+                    Adopted<br>
+                    No.
+                </td>
+                <td rowspan="2" class="border border-gray-800 p-2 text-center">Actual coming No.</td>
+            </tr>
+            
+            <!-- Third row -->
+            <tr>
+                <td class="border border-gray-800 p-2 bg-red-100 text-center">No</td>
+                <td class="border border-gray-800 p-2 bg-red-100 text-center">Date</td>
+            </tr>
+            
+            <!-- Fourth row -->
+            <tr>
+                <td class="border border-gray-800 p-2"></td>
+                <td class="border border-gray-800 p-2"></td>
+                <td class="border border-gray-800 p-2 bg-red-100"></td>
+                <td class="border border-gray-800 p-2 bg-red-100"></td>
+                <td class="border border-gray-800 p-2 bg-red-100"></td>
+                <td class="border border-gray-800 p-2 bg-red-100"></td>
+                <td class="border border-gray-800 p-2"></td>
+                <td class="border border-gray-800 p-2 text-right pr-4">0</td>
+            </tr>
+            
+            <!-- Fifth row (empty row) -->
+            <tr>
+                <td class="border border-gray-800 p-2"></td>
+                <td class="border border-gray-800 p-2"></td>
+                <td class="border border-gray-800 p-2 bg-red-100"></td>
+                <td class="border border-gray-800 p-2 bg-red-100"></td>
+                <td class="border border-gray-800 p-2 bg-red-100"></td>
+                <td class="border border-gray-800 p-2 bg-red-100"></td>
+                <td class="border border-gray-800 p-2"></td>
+                <td class="border border-gray-800 p-2"></td>
+            </tr>
+            
+            <!-- Sixth row (green row with values) -->
+            <tr>
+                <td class="border border-gray-800 p-2 text-center">0</td>
+                <td class="border border-gray-800 p-2 bg-green-400"></td>
+                <td class="border border-gray-800 p-2 bg-green-400 text-center">0</td>
+                <td class="border border-gray-800 p-2 bg-green-400"></td>
+                <td class="border border-gray-800 p-2 bg-green-400 text-center">0</td>
+                <td class="border border-gray-800 p-2 bg-green-400 text-center">0</td>
+                <td class="border border-gray-800 p-2 bg-green-400 text-center">0</td>
+                <td class="border border-gray-800 p-2 bg-green-400 text-center">0</td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

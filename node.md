@@ -7,11 +7,6 @@ cfg.members[0].priority = 2;  // Ưu tiên cao nhất cho node 27017
 cfg.members[1].priority = 1;  // Mức trung bình
 cfg.members[2].priority = 0.5; // Ưu tiên thấp nhất
 rs.reconfig(cfg, { force: true });
-
-
-
-
-
 rs.reconfig({
         "_id" : "rs0",
         "version" : 3,

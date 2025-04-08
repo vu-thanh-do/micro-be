@@ -1,84 +1,151 @@
-import mongoose, { Model, PaginateModel } from "mongoose";
-import { INoti } from "../../types/noti.type";
+import mongoose, { Document, PaginateModel } from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
-import { IMasterData } from "../../types/masterData.type";
-import { ILanguage } from "../../types/language.type";
-import { ObjectId } from "mongodb";
 
 interface IMfgRecruitmentRequest extends Document {
-    _id: ObjectId;
     year: number;
     month: number;
-    requestByLine: {
-        lineId: ObjectId;
-        requestByLineId: ObjectId;
-        requestByLineName: string;
-        requestByLineCode: string;
-        requestByLineStatus: boolean;
-        requestByLineCreatedAt: Date;
-        requestByLineUpdatedAt: Date;
+    recCode: string;
+    requestId: mongoose.Types.ObjectId;
+    lines: {
+        id: mongoose.Types.ObjectId;
+        name: string;
+        dailyVolume: number;
+        standardPerson: number;
+        actualEmployeeNumber: number;
+        requireNumber: number;
+        terminate: number;
+        pregnantLeave: number;
+        leaveAdjustment: number;
+        actualComeBack: number;
     }[];
-    status: boolean;
+    movement: number;
+    requireNumberAllLine: number;
+    remainLastMonth: number;
+    totalRequire: number;
+    levelApproval: {
+        Id: number;
+        level: number;
+        EmployeeId: string;
+        EmployeeName: string;
+    }[];
+    conclusion: {
+        total: {
+            official: number;
+            outsource: number;
+            student: number;
+        };
+        education: string;
+        age: string;
+        gender: string;
+        physicalCondition: {
+            male: {
+                height: number;
+                weight: number;
+            };
+            female: {
+                height: number;
+                weight: number;
+            };
+        };
+        enterDate: {
+            enterDate: Date;
+            quantity: number;
+        }[];
+    };
+    total: {
+        dailyVolume: number;
+        standardPerson: number;
+        actualEmployeeNumber: number;
+        movement: number;
+        terminate: number;
+        pregnantLeave: number;
+        leaveAdjustment: number;
+        requireNumber: number;
+        requireNumberForAllLine: number;
+        actualComeBack: number;
+        remainLastMonth: number;
+        totalRequire: number;
+    };
+    status: string;
     createdAt: Date;
     updatedAt: Date;
 }
 
-    const MfgRecruitmentRequestSchema = new mongoose.Schema(
+const MfgRecruitmentRequestSchema = new mongoose.Schema(
     {
-        _id: ObjectId,
-        year: Number,
-        month: Number,
-        requestByLine: [
-            {
-                lineId: ObjectId,
-                requestByLineId: ObjectId,
-                requestByLineName: String,
-                requestByLineCode: String,
-                requestByLineStatus: Boolean,
-                requestByLineCreatedAt: Date,
-                requestByLineUpdatedAt: Date
-            }
-        ],
-        status: Boolean,
-        createdAt: Date,
-        updatedAt: Date
+        requestId: { type: mongoose.Schema.Types.ObjectId, required: true , ref: "RequestRecruitment" },
+        year: { type: Number, required: true },
+        month: { type: Number, required: true },
+        recCode: { type: String, default: "" },
+        lines: [{
+            id: { type: mongoose.Schema.Types.ObjectId, required: true },
+            name: { type: String, required: true },
+            dailyVolume: { type: Number, required: true },
+            standardPerson: { type: Number, required: true },
+            actualEmployeeNumber: { type: Number, required: true },
+            requireNumber: { type: Number, required: true },
+            terminate: { type: Number, required: true },
+            pregnantLeave: { type: Number, required: true },
+            leaveAdjustment: { type: Number, required: true },
+            actualComeBack: { type: Number, required: true }
+        }],
+        movement: { type: Number, required: true },
+        requireNumberAllLine: { type: Number, required: true },
+        remainLastMonth: { type: Number, required: true },
+        totalRequire: { type: Number, required: true },
+        levelApproval: [{
+            Id: { type: Number, required: true },
+            level: { type: Number, required: true },
+            EmployeeId: { type: String, default: "" },
+            EmployeeName: { type: String, default: "" }
+        }],
+        conclusion: {
+            total: {
+                official: { type: Number, required: true },
+                outsource: { type: Number, required: true },
+                student: { type: Number, required: true }
+            },
+            education: { type: String, required: true },
+            age: { type: String, required: true },
+            gender: { type: String, required: true },
+            physicalCondition: {
+                male: {
+                    height: { type: Number, required: true },
+                    weight: { type: Number, required: true }
+                },
+                female: {
+                    height: { type: Number, required: true },
+                    weight: { type: Number, required: true }
+                }
+            },
+            enterDate: [{
+                enterDate: { type: Date, required: true },
+                quantity: { type: Number, required: true }
+            }]
+        },
+        total: {
+            dailyVolume: { type: Number, required: true },
+            standardPerson: { type: Number, required: true },
+            actualEmployeeNumber: { type: Number, required: true },
+            movement: { type: Number, required: true },
+            terminate: { type: Number, required: true },
+            pregnantLeave: { type: Number, required: true },
+            leaveAdjustment: { type: Number, required: true },
+            requireNumber: { type: Number, required: true },
+            requireNumberForAllLine: { type: Number, required: true },
+            actualComeBack: { type: Number, required: true },
+            remainLastMonth: { type: Number, required: true },
+            totalRequire: { type: Number, required: true }
+        },
     },
     {
         timestamps: true,
-        versionKey: false,
+        versionKey: false
     }
 );
 MfgRecruitmentRequestSchema.plugin(mongoosePaginate);
-interface MfgRecruitmentRequestModel<T extends Document> extends PaginateModel<T> {}      
-const MfgRecruitmentRequest = mongoose.model<IMfgRecruitmentRequest, MfgRecruitmentRequestModel<IMfgRecruitmentRequest>>("MfgRecruitmentRequest", MfgRecruitmentRequestSchema);
-// export default MfgRecruitmentRequest;
-// {
-//     _id: ObjectId,
-//     nam: Number,
-//     thang: Number,
-//     phongBan: String,         // Phòng/ban đăng ký yêu cầu
-//     nguoiYeuCau: ObjectId,    // Người đăng ký yêu cầu tuyển dụng
-//     yeuCauTheoDayChuyen: [
-//       {
-//         dayChuyenId: ObjectId,  // Tham chiếu đến dây chuyền sản xuất
-//         hangMuc: [
-//           {
-//             hangMucId: String,  // Tham chiếu đến collection HangMucTuyenDung
-//             soLuong: Number,    // Số lượng nhân viên cần tuyển
-//             viTri: [Number]     // Mảng vị trí/ngày cần tuyển (như trong bảng)
-//           }
-//         ]
-//       }
-//     ],
-//     tongSoLuongTuyen: Number, // Tổng số lượng cần tuyển
-//     yeuCauChung: {            // Yêu cầu chung (như trong form)
-//       trinhDo: String,        // THCS, THPT, TC, CĐ, ĐH
-//       doTuoi: String,
-//       gioiTinh: String,
-//       // Các yêu cầu khác
-//     },
-//     trangThai: String,        // "Đã đăng ký", "Đang xử lý", "Đã duyệt", "Hoàn thành"
-//     ngayTao: Date,
-//     ngayCapNhat: Date,
-//     ghiChu: String
-//   }
+const MfgRecruitmentRequest = mongoose.model<IMfgRecruitmentRequest, PaginateModel<IMfgRecruitmentRequest>>(
+    "MfgRecruitmentRequest", 
+    MfgRecruitmentRequestSchema
+);
+export default MfgRecruitmentRequest;

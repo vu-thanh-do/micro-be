@@ -19,6 +19,7 @@ import RequestRecruitment from "../../../models/models-project/requestRecruitmen
 import DepartmentRecruitmentRequest from "../../../models/models-project/departmentRecruitmentRequest.mode";
 import ApprovalHistory from "../../../models/models-project/approvalHistory.model";
 import MfgReplaceRecruitmentRequest from "../../../models/models-project/mfgReplaceRecruitmentRequest.model";
+import MfgRecruitmentRequest from "../../../models/models-project/mfgRecruitmentRequest.model";
 
 interface IRecruitmentRequest {
   userId: string;
@@ -1333,9 +1334,10 @@ class RequestRecruitmentController {
       // 3. Lấy thông tin chi tiết từ các bảng khác
       const requestIds = result.docs.map((req: any) => req._id);
 
-      const [departmentRequests, mfgReplaceRequests] = await Promise.all([
+      const [departmentRequests, mfgReplaceRequests, mfgRequests] = await Promise.all([
         DepartmentRecruitmentRequest.find({ requestId: { $in: requestIds } }),
         MfgReplaceRecruitmentRequest.find({ requestId: { $in: requestIds } }),
+        MfgRecruitmentRequest.find({ requestId: { $in: requestIds } }),
       ]);
 
       // 4. Tạo map để dễ dàng truy xuất thông tin chi tiết
@@ -1349,13 +1351,19 @@ class RequestRecruitmentController {
       });
 
       mfgReplaceRequests.forEach((mfgReplace: any) => {
+        console.log(mfgReplace,'mfgReplace')
         detailsMap.set(mfgReplace.requestId.toString(), {
           type: 'MFG_REPLACE',
           data: mfgReplace
         });
       });
-
-   
+      mfgRequests.forEach((mfg: any) => {
+        console.log(mfg,'mfg')
+        detailsMap.set(mfg.requestId.toString(), {
+          type: 'MFG',
+          data: mfg
+        });
+      });
 
       // 5. Transform dữ liệu
       const transformedData = result.docs.map((req: any) => {
@@ -1410,7 +1418,21 @@ class RequestRecruitmentController {
               ...baseData,
               year: detailData.year,
               month: detailData.month,
-              requestByLine: detailData.requestByLine || []
+              requestByLine: detailData.requestByLine || [],
+              lines: detailData.lines || [],
+              movement: detailData.movement || 0,
+              requireNumberAllLine: detailData.requireNumberAllLine || 0,
+              remainLastMonth: detailData.remainLastMonth || 0,
+              totalRequire: detailData.totalRequire || 0,
+              status: detailData.status || "",
+              createdAt: detailData.createdAt || new Date(),
+              updatedAt: detailData.updatedAt || new Date(),
+              conclusion: detailData.conclusion || {},
+              total: detailData.total || 0,
+              levelApproval: detailData.levelApproval || [],
+              currentApprovalInfo: detailData.levelApproval?.find(
+                (level: any) => level.status === "pending"
+              ) || detailData.levelApproval?.[detailData.levelApproval.length - 1]
             };
 
           default:
