@@ -42,7 +42,7 @@ interface IMfgReplaceRecruitmentRequest extends Document {
   updatedAt: Date;
 }
 
-    const MfgReplaceRecruitmentRequestSchema = new mongoose.Schema(
+const MfgReplaceRecruitmentRequestSchema = new mongoose.Schema(
   {
     requestId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -84,7 +84,6 @@ interface IMfgReplaceRecruitmentRequest extends Document {
         IsSelected: { type: String },
       },
     ],
-
   },
   {
     timestamps: true,

@@ -30,6 +30,10 @@ import { SyncCompanyStructureController } from "./controllers/controllers-projec
 import SumaryDepartmentController from "./controllers/controllers-project/sumaryHc/sumaryDepartment.controller";
 import { InfoUserController } from "./controllers/controllers-project/infoUser/infoUser.controller";
 import RequestMfgNewController from "./controllers/controllers-project/requestRecruitment/requestMfgNew.controller";
+import AdoptionController from "./controllers/controllers-project/adoption/adoption.controller";
+import { upload } from "./middleware/upload";
+import { PendingApprovalController } from "./controllers/controllers-project/pendingApproval/pendingApproval.controller";
+import HistoryApprovalController from "./controllers/controllers-project/historyApprove/historyApprove.controller";
 useContainer(container);
 const app = createExpressServer({
   cors: {
@@ -41,7 +45,7 @@ const app = createExpressServer({
       "http://localhost:4200/",
       "http://localhost:3002/",
       "http://10.73.131.60:5232",
-	    "http://10.73.131.60:5232/"
+      "http://10.73.131.60:5232/",
     ],
     credentials: true,
   },
@@ -60,9 +64,17 @@ const app = createExpressServer({
     SyncCompanyStructureController,
     SumaryDepartmentController,
     InfoUserController,
-    RequestMfgNewController
+    RequestMfgNewController,
+    AdoptionController,
+    PendingApprovalController,
+    HistoryApprovalController
   ],
 });
+app.post(
+  "/adoption/import-adoption-version-hr",
+  upload.single("file"),
+  (req: any, res: any, next: any) => next()
+);
 
 dotenv.config();
 app.use(express.json());

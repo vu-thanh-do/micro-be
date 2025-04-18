@@ -20,6 +20,8 @@ import MfgRecruitmentRequest from "../../../models/models-project/mfgRecruitment
 import ApprovalHistory from "../../../models/models-project/approvalHistory.model";
 import mongoose, { Types } from "mongoose";
 import { IMfgRecruitmentRequest } from "../../../types/requestMfgnew.type";
+import LineMfg from "../../../models/models-project/lineMfg.model";
+import XLSX from "xlsx";
 
 // Interface cho dữ liệu phê duyệt
 interface IApprovalRequest {
@@ -47,7 +49,6 @@ class RequestMfgNewController {
     this.notiService = notiService;
     this.uow = uow;
   }
-
   // Phương thức chuyển đổi kiểu dữ liệu cho lines
   private convertLinesToMongoDBFormat(lines: any[] = []) {
     return lines.map((line) => ({
@@ -63,7 +64,6 @@ class RequestMfgNewController {
       actualComeBack: line.actualComeBack || 0,
     }));
   }
-
   // Phương thức chuyển đổi kiểu dữ liệu cho enterDate
   private convertEnterDatesToMongoDBFormat(enterDates: any[] = []) {
     return enterDates.map((item) => ({
@@ -71,7 +71,67 @@ class RequestMfgNewController {
       quantity: item.quantity || 0,
     }));
   }
-
+  @Get("/export-template-mfg-new")
+  @HttpCode(200)
+  async handelExportTemplateMfgNew(@Res() response: Response) {
+    try {
+      const dataAllLineMfg = await LineMfg.find({ status: true });
+      const workbook = XLSX.utils.book_new();
+      const worksheetData = dataAllLineMfg.map(line => {
+        const lineId = line._id && mongoose.Types.ObjectId.isValid(line._id) 
+          ? line._id.toString()
+          : '';
+        return {
+          "Mã": lineId,
+          "Tên đơn vị/phòng ban": line.nameLine || '',
+          "Sản lượng ngày": "",
+          "Người cần thiết": "",
+          "Người thực tế": "",
+          "Số người yêu cầu": "",
+          "Dự báo nghỉ việc": "",
+          "Nghỉ thai sản": "",
+          "Đối ứng nghỉ phép": "",
+          "Người hỗ trợ quay lại thực tế": ""
+        };
+      });
+      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+      const columnWidths = [
+        { wch: 24 }, // Mã
+        { wch: 30 }, // Tên đơn vị/phòng ban
+        { wch: 25 }, // Số lượng công việc hàng ngày
+        { wch: 20 }, // Số người tiêu chuẩn
+        { wch: 25 }, // Số lượng nhân viên hiện tại
+        { wch: 20 }, // Số lượng yêu cầu
+        { wch: 15 }, // Nghỉ việc
+        { wch: 15 }, // Nghỉ thai sản
+        { wch: 25 }, // Điều chỉnh nghỉ phép
+        { wch: 25 }  // Số lượng quay lại thực tế
+      ];
+      worksheet['!cols'] = columnWidths;
+      
+      // Thêm worksheet vào workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Template MFG");
+      
+      // Tạo buffer từ workbook
+      const excelBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "buffer"
+      });
+      
+      // Thiết lập headers cho response
+      response.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      response.setHeader("Content-Disposition", `attachment; filename=Template_MFG_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      // Gửi file về cho người dùng
+      return response.send(excelBuffer);
+    } catch (error: any) {
+      console.error("Error occurred:", error);
+      return response.status(500).json({
+        status: 500,
+        message: "Đã xảy ra lỗi khi xuất template tuyển dụng MFG",
+        error: error.message,
+      });
+    }
+  }
   @Post("/create")
   @HttpCode(201)
   async create(
@@ -304,7 +364,7 @@ class RequestMfgNewController {
         page,
         limit,
         sort: { createdAt: -1 },
-        populate:  "requestId",
+        populate: "requestId",
       };
 
       const result = await (MfgRecruitmentRequest as any).paginate(
@@ -367,6 +427,15 @@ class RequestMfgNewController {
   @HttpCode(200)
   async getRequestById(@Param("id") id: string, @Res() response: Response) {
     try {
+      // Kiểm tra định dạng ID
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return response.status(400).json({
+          status: 400,
+          message: "ID yêu cầu không hợp lệ",
+          data: null,
+        });
+      }
+      
       // Lấy thông tin chi tiết yêu cầu tuyển dụng
       const mfgRequest = await MfgRecruitmentRequest.findOne({
         requestId: new mongoose.Types.ObjectId(id),
@@ -568,7 +637,7 @@ class RequestMfgNewController {
           content:
             "Yêu cầu tuyển dụng mới MFG bạn đang phê duyệt đã được chỉnh sửa thông tin",
           type: "REQUEST_EDITED",
-          userId: currentApprover.EmployeeId ||'.',
+          userId: currentApprover.EmployeeId || ".",
           role: "APPROVER",
           requestId: id,
           requestType: "MFG",
@@ -994,7 +1063,7 @@ class RequestMfgNewController {
       // Kiểm tra và cập nhật thông tin người tạo nếu có
       if (existingRequest.createdBy) {
         if (data.RequesterName)
-          existingRequest.createdBy.RequesterName = data.RequesterName ;
+          existingRequest.createdBy.RequesterName = data.RequesterName;
         if (data.RequesterCode)
           existingRequest.createdBy.RequesterCode = data.RequesterCode;
         if (data.RequesterPosition)

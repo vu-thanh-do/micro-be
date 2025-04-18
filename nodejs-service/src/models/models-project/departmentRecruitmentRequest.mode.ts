@@ -8,12 +8,27 @@ const DepartmentRecruitmentRequestSchema = new mongoose.Schema({
   },
   total: { type: Number },
   hrAnswer: {
-    dateOfAdoption: { type: String },
+    typeRecruit: {
+      isSelectInternal: { type: Boolean },
+      isSelectExternal: { type: Boolean },
+      fromDateInternal : { type: Date },
+      toDateInternal : { type: Date },
+      fromDateExternal : { type: Date },
+      toDateExternal : { type: Date },
+    },
     numberOfAdopt: { type: String },
     comment: { type: String },
   },
   positions: { type: Array },
-
+  isSpecial: { type: Boolean, default: false },
+  countSpecial: { type: Number, default: 0 },
+  infoDepartment: {
+    division: { type: String },
+    department: { type: String },
+    fiscalYear: { type: String },
+    month: { type: String },
+    dOrNonD: { type: String },
+  },
   levelApproval: [
     {
       Id: { type: Number },

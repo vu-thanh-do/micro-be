@@ -80,7 +80,6 @@ app.delete("/files/delete-file/:filename", (req, res) => {
   const { filename } = req.params;
   const filePath = path.join(uploadDir, filename);
 
-  // Kiểm tra để tránh tấn công path traversal
   if (!filePath.startsWith(uploadDir)) {
     return res.status(400).json({ error: "Yêu cầu không hợp lệ" });
   }
@@ -142,6 +141,6 @@ app.put("/files/update/:filename", upload.single("file"), (req, res) => {
   }
 });
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server running at http://localhost:${port}`);
 });

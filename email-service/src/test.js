@@ -5,8 +5,11 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import sendEmailNotification from "./service/sendMail.js";
-import juice from 'juice';
+import multer from "multer";
+import fetch from 'node-fetch';
+import FormData from 'form-data';
 
+const upload = multer({ storage: multer.memoryStorage() });
 // Create an instance of Express app
 const app = express();
 app.use(express.json());
@@ -44,6 +47,7 @@ const SERVICES = {
   NOTI_SERVICE: "http://localhost:4001",
   RESIGN_SERVICE: "http://localhost:4001",
   SYNC_COMPANY_STRUCTURE_SERVICE: "http://localhost:4001",
+  ADOPTION_SERVICE: "http://localhost:4001",
 };
 
 // Debug middleware to log all requests
@@ -53,7 +57,7 @@ app.use((req, res, next) => {
     url: req.url,
     headers: req.headers,
     body: req.body
-    });
+  });
   next();
 });
 
@@ -71,7 +75,7 @@ const createServiceProxy = (targetUrl, pathRewrite = null, timeout = 30000) => {
       });
       console.log('Original URL:', req.originalUrl);
       console.log('Proxied URL:', proxyReq.path);
-      
+
       // If it's a POST/PUT with a body, handle body
       if (['POST', 'PUT'].includes(req.method) && req.body) {
         const bodyData = JSON.stringify(req.body);
@@ -106,7 +110,7 @@ app.post('/api/login', async (req, res) => {
       body: JSON.stringify(req.body),
       timeout: 10000 // 10 seconds timeout
     });
-    
+
     const data = await response.json();
     return res.status(response.status).json(data);
   } catch (error) {
@@ -121,18 +125,18 @@ app.post('/api/login', async (req, res) => {
 });
 // Get-me route
 app.get('/auth/get-me', createServiceProxy(
-  SERVICES.AUTH_SERVICE, 
+  SERVICES.AUTH_SERVICE,
   { '^/auth/get-me': '/api/get-user-from-token' },
   10000
 ));
 app.get('/api/get-user-from-token', createServiceProxy(
-  SERVICES.AUTH_SERVICE, 
+  SERVICES.AUTH_SERVICE,
   { '^/auth/get-me': '/api/get-user-from-token' },
   10000
 ));
 // Refresh token route
 app.post('/auth/refreshToken', createServiceProxy(
-  SERVICES.AUTH_SERVICE, 
+  SERVICES.AUTH_SERVICE,
   { '^/auth/refreshToken': '/api/refreshToken' },
   10000
 ));
@@ -160,7 +164,7 @@ app.post('/api/refreshToken', async (req, res) => {
 });
 // Get all users route
 app.get('/auth/get-all-users', createServiceProxy(
-  SERVICES.AUTH_SERVICE, 
+  SERVICES.AUTH_SERVICE,
   { '^/auth/get-all-users': '/api/get-all-user' },
   10000
 ));
@@ -172,10 +176,12 @@ app.get('/role/get-role', createServiceProxy(
 
 app.get('/api/get-role-by-id/:id', createServiceProxy(
   SERVICES.AUTH_SERVICE,
-  { '^/role/get-role-by-id/:id': (path, req)   => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/role/get-role-by-id/${req.params.id}${query ? '?' + query : ''}`;
-  } },
+  {
+    '^/role/get-role-by-id/:id': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/role/get-role-by-id/${req.params.id}${query ? '?' + query : ''}`;
+    }
+  },
   10000
 ));
 
@@ -193,8 +199,8 @@ app.put('/role/update-role/:id', createServiceProxy(
 // logs
 app.get('/logs/get-all-logs', createServiceProxy(
   SERVICES.LOG_SERVICE,
-  { 
-      '^/logs/get-all-logs': (path, req) => {
+  {
+    '^/logs/get-all-logs': (path, req) => {
       const query = new URLSearchParams(req.query).toString();
       return `/logs${query ? '?' + query : ''}`;
     }
@@ -204,10 +210,12 @@ app.get('/logs/get-all-logs', createServiceProxy(
 // files
 app.get('/files/get-files', createServiceProxy(
   SERVICES.FILE_SERVICE,
-  { '^/files/get-files': (path, req) => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/files/get-files${query ? '?' + query : ''}`;
-  } },
+  {
+    '^/files/get-files': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/files/get-files${query ? '?' + query : ''}`;
+    }
+  },
   10000
 ));
 app.put('/files/update/:filename', createServiceProxy(
@@ -247,12 +255,14 @@ app.post('/files/upload', createServiceProxy(
 ));
 app.get('/files/get-file-by-id/:id', createServiceProxy(
   SERVICES.FILE_SERVICE,
-  { '^/files/get-file-by-id/:id': (path, req) => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/files/${req.params.id}${query ? '?' + query : ''}`;
-  } },
+  {
+    '^/files/get-file-by-id/:id': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/files/${req.params.id}${query ? '?' + query : ''}`;
+    }
+  },
   10000
-  ));
+));
 // Code Approval routes
 app.get('/codeApproval', createServiceProxy(
   SERVICES.CODE_APPROVAL_SERVICE,
@@ -262,7 +272,7 @@ app.get('/codeApproval/get-by-id/:id', createServiceProxy(
   SERVICES.CODE_APPROVAL_SERVICE,
   { '^/codeApproval/get-by-id/:id': '/codeApproval/get-by-id/:id' }
 ));
-app.post('/codeApproval/create',async(req,res)=>{
+app.post('/codeApproval/create', async (req, res) => {
   try {
     const response = await fetch(`${SERVICES.CODE_APPROVAL_SERVICE}/codeApproval/create`, {
       method: 'POST',
@@ -283,7 +293,7 @@ app.post('/codeApproval/create',async(req,res)=>{
     });
   }
 });
-app.put('/codeApproval/update/:id',async(req,res)=>{
+app.put('/codeApproval/update/:id', async (req, res) => {
   try {
     const response = await fetch(`${SERVICES.CODE_APPROVAL_SERVICE}/codeApproval/update/${req.params.id}`, {
       method: 'PUT',
@@ -291,7 +301,7 @@ app.put('/codeApproval/update/:id',async(req,res)=>{
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(req.body)
-    }); 
+    });
     const data = await response.json();
     return res.status(response.status).json(data);
   } catch (error) {
@@ -302,7 +312,7 @@ app.put('/codeApproval/update/:id',async(req,res)=>{
       message: "Failed to update code approval",
       data: null
     });
-    }
+  }
 });
 
 
@@ -315,7 +325,7 @@ app.use('/headCount', createServiceProxy(
 // Language routes
 app.get('/language', createServiceProxy(
   SERVICES.LANGUAGE_SERVICE,
-  { 
+  {
     '^/language': (path, req) => {
       const query = new URLSearchParams(req.query).toString();
       return `/language${query ? '?' + query : ''}`;
@@ -324,25 +334,31 @@ app.get('/language', createServiceProxy(
 ));
 app.get('/language/get-all-group', createServiceProxy(
   SERVICES.LANGUAGE_SERVICE,
-  { '^/language/get-all-group':(path, req)   => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/language/get-all-group${query ? '?' + query : ''}`;
-  } }
+  {
+    '^/language/get-all-group': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/language/get-all-group${query ? '?' + query : ''}`;
+    }
+  }
 ));
 // all request recruitment
 app.get('/requestRecruitment/department/get-all', createServiceProxy(
   SERVICES.REQUEST_RECRUITMENT_SERVICE,
-  { '^/requestRecruitment/department/get-all':(path, req)  => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/requestRecruitment/department/get-all${query ? '?' + query : ''}`;
-  } }
+  {
+    '^/requestRecruitment/department/get-all': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/requestRecruitment/department/get-all${query ? '?' + query : ''}`;
+    }
+  }
 ));
 app.get('/requestRecruitment/department/:id', createServiceProxy(
   SERVICES.REQUEST_RECRUITMENT_SERVICE,
-  { '^/requestRecruitment/department/:id':(path, req)  => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/requestRecruitment/department/${req.params.id}${query ? '?' + query : ''}`;
-  } }
+  {
+    '^/requestRecruitment/department/:id': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/requestRecruitment/department/${req.params.id}${query ? '?' + query : ''}`;
+    }
+  }
 ));
 app.put('/requestRecruitment/update-processing/:id', async (req, res) => {
   try {
@@ -354,9 +370,9 @@ app.put('/requestRecruitment/update-processing/:id', async (req, res) => {
       body: JSON.stringify(req.body),
       timeout: 10000 // 10 seconds timeout
     });
-    
+
     const data = await response.json();
-    return res.status(response.status).json(data);  
+    return res.status(response.status).json(data);
   } catch (error) {
     console.error('Update Request Recruitment Error:', error);
     return res.status(500).json({
@@ -378,7 +394,7 @@ app.post('/requestRecruitment/department/create', async (req, res) => {
       body: JSON.stringify(req.body),
       timeout: 10000 // 10 seconds timeout
     });
-    
+
     const data = await response.json();
     return res.status(response.status).json(data);
   } catch (error) {
@@ -393,10 +409,12 @@ app.post('/requestRecruitment/department/create', async (req, res) => {
 });
 app.get('/requestRecruitment/department/user/:id', createServiceProxy(
   SERVICES.REQUEST_RECRUITMENT_SERVICE,
-  { '^/requestRecruitment/department/user/:id':(path, req)   => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/requestRecruitment/department/user/${req.params.id}${query ? '?' + query : ''}`;
-  } }
+  {
+    '^/requestRecruitment/department/user/:id': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/requestRecruitment/department/user/${req.params.id}${query ? '?' + query : ''}`;
+    }
+  }
 ));
 app.put('/requestRecruitment/department/edit/:id', async (req, res) => {
   try {
@@ -408,7 +426,7 @@ app.put('/requestRecruitment/department/edit/:id', async (req, res) => {
       body: JSON.stringify(req.body),
       timeout: 10000 // 10 seconds timeout
     });
-    
+
     const data = await response.json();
     return res.status(response.status).json(data);
   } catch (error) {
@@ -431,7 +449,7 @@ app.put('requestRecruitment/department/revise/:id', async (req, res) => {
       body: JSON.stringify(req.body),
       timeout: 10000 // 10 seconds timeout
     });
-    
+
     const data = await response.json();
     return res.status(response.status).json(data);
   } catch (error) {
@@ -454,7 +472,7 @@ app.post('/requestRecruitment/department/approve', async (req, res) => {
       body: JSON.stringify(req.body),
       timeout: 10000 // 10 seconds timeout
     });
-    
+
     const data = await response.json();
     return res.status(response.status).json(data);
   } catch (error) {
@@ -478,7 +496,7 @@ app.post('/requestRecruitment/mfgReplace/create', async (req, res) => {
       body: JSON.stringify(req.body),
       timeout: 10000 // 10 seconds timeout
     });
-    
+
     const data = await response.json();
     return res.status(response.status).json(data);
   } catch (error) {
@@ -501,7 +519,7 @@ app.put('/requestRecruitment/mfgReplace/edit/:id', async (req, res) => {
       body: JSON.stringify(req.body),
       timeout: 10000 // 10 seconds timeout
     });
-    
+
     const data = await response.json();
     return res.status(response.status).json(data);
   } catch (error) {
@@ -516,10 +534,12 @@ app.put('/requestRecruitment/mfgReplace/edit/:id', async (req, res) => {
 });
 app.get('/requestRecruitment/mfgReplace/:id', createServiceProxy(
   SERVICES.REQUEST_RECRUITMENT_SERVICE,
-  { '^/requestRecruitment/mfgReplace/:id':(path, req)   => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/requestRecruitment/mfgReplace/${req.params.id}${query ? '?' + query : ''}`;
-  } }
+  {
+    '^/requestRecruitment/mfgReplace/:id': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/requestRecruitment/mfgReplace/${req.params.id}${query ? '?' + query : ''}`;
+    }
+  }
 ));
 
 app.post('/requestRecruitment/mfgReplace/approve', async (req, res) => {
@@ -532,7 +552,7 @@ app.post('/requestRecruitment/mfgReplace/approve', async (req, res) => {
       body: JSON.stringify(req.body),
       timeout: 10000 // 10 seconds timeout
     });
-    
+
     const data = await response.json();
     return res.status(response.status).json(data);
   } catch (error) {
@@ -555,7 +575,7 @@ app.post('/requestRecruitment/mfgReplace/revise/:id', async (req, res) => {
       body: JSON.stringify(req.body),
       timeout: 10000 // 10 seconds timeout
     });
-    
+
     const data = await response.json();
     return res.status(response.status).json(data);
   } catch (error) {
@@ -572,7 +592,7 @@ app.delete('/requestRecruitment/mfgReplace/:id', async (req, res) => {
   try {
     const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/mfgReplace/${req.params.id}`, {
       method: 'DELETE',
-      headers: {  
+      headers: {
         'Content-Type': 'application/json'
       },
       timeout: 10000 // 10 seconds timeout
@@ -582,7 +602,7 @@ app.delete('/requestRecruitment/mfgReplace/:id', async (req, res) => {
   } catch (error) {
     console.error('Delete Mfg Replace Error:', error);
     return res.status(500).json({
-      code: 500,  
+      code: 500,
       status: "Error",
       message: "Failed to delete mfg replace",
       data: null
@@ -592,7 +612,7 @@ app.delete('/requestRecruitment/mfgReplace/:id', async (req, res) => {
 // mfg new 
 app.post('/requestRecruitment/mfgNew/create', async (req, res) => {
   try {
-    const response  = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/mfgNew/create`, {
+    const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/mfgNew/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -609,22 +629,24 @@ app.post('/requestRecruitment/mfgNew/create', async (req, res) => {
       status: "Error",
       message: "Failed to create mfg new",
       data: null
-    });   
+    });
   }
-}); 
+});
 app.get('/requestRecruitment/mfgNew/:id', createServiceProxy(
   SERVICES.REQUEST_RECRUITMENT_SERVICE,
-  { '^/requestRecruitment/mfgNew/:id':(path, req)   => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/requestRecruitment/mfgNew/${req.params.id}${query ? '?' + query : ''}`;
-  } }
+  {
+    '^/requestRecruitment/mfgNew/:id': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/requestRecruitment/mfgNew/${req.params.id}${query ? '?' + query : ''}`;
+    }
+  }
 ));
 app.put('/requestRecruitment/mfgNew/edit/:id', async (req, res) => {
   try {
     const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/mfgNew/edit/${req.params.id}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'  
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(req.body),
       timeout: 10000 // 10 seconds timeout
@@ -636,7 +658,7 @@ app.put('/requestRecruitment/mfgNew/edit/:id', async (req, res) => {
     return res.status(500).json({
       code: 500,
       status: "Error",
-      message: "Failed to edit mfg new",    
+      message: "Failed to edit mfg new",
       data: null
     });
   }
@@ -647,7 +669,7 @@ app.post('/requestRecruitment/mfgNew/approve', async (req, res) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
-      },  
+      },
       body: JSON.stringify(req.body),
       timeout: 10000 // 10 seconds timeout
     });
@@ -690,20 +712,24 @@ app.put('/requestRecruitment/mfgNew/revise/:id', async (req, res) => {
 // Form Template routes
 app.get('/formTemplate/get-name-structure', createServiceProxy(
   SERVICES.FORM_TEMPLATE_SERVICE,
-  { '^/formTemplate/get-name-structure':(path, req) => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/formTemplate/get-name-structure${query ? '?' + query : ''}`;
-  } }
+  {
+    '^/formTemplate/get-name-structure': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/formTemplate/get-name-structure${query ? '?' + query : ''}`;
+    }
+  }
 ));
 // Line Mfg routes
 app.get('/lineMfg/getAllLineMfg', createServiceProxy(
   SERVICES.LINE_MFG_SERVICE,
-  { '^/lineMfg/getAllLineMfg': (path, req) => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/lineMfg/getAllLineMfg${query ? '?' + query : ''}`;
-  } }
+  {
+    '^/lineMfg/getAllLineMfg': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/lineMfg/getAllLineMfg${query ? '?' + query : ''}`;
+    }
+  }
 ));
-app.post('/lineMfg/createLine',  async (req, res) => {
+app.post('/lineMfg/createLine', async (req, res) => {
   try {
     const response = await fetch(`${SERVICES.LINE_MFG_SERVICE}/lineMfg/createLine`, {
       method: 'POST',
@@ -713,7 +739,7 @@ app.post('/lineMfg/createLine',  async (req, res) => {
       body: JSON.stringify(req.body),
       timeout: 10000 // 10 seconds timeout
     });
-    
+
     const data = await response.json();
     return res.status(response.status).json(data);
   } catch (error) {
@@ -733,19 +759,39 @@ app.put('/lineMfg/updateLine/:id', createServiceProxy(
 app.post('/lineMfg/toggleLine/:id', createServiceProxy(
   SERVICES.LINE_MFG_SERVICE,
   { '^/lineMfg/toggleLine/:id': '/lineMfg/toggleLine/:id' }
-)); 
+));
 app.post('/lineMfg/importExcel', createServiceProxy(
   SERVICES.LINE_MFG_SERVICE,
   { '^/lineMfg/importExcel': '/lineMfg/importExcel' }
-)); 
+));
 app.get('/lineMfg/downloadTemplate', createServiceProxy(
   SERVICES.LINE_MFG_SERVICE,
   { '^/lineMfg/downloadTemplate': '/lineMfg/downloadTemplate' }
-));   
+));
+app.get('/requestRecruitment/mfgNew/export-template-mfg-new', async (req, res) => {
+  try {
+    const url = `${LINE_MFG_SERVICE}/requestRecruitment/mfgNew/export-template-mfg-new`;
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer', // quan trọng để nhận file binary
+    });
+    // Forward header để trình duyệt hiểu đây là file
+    res.setHeader('Content-Type', response.headers['content-type'] || 'application/octet-stream');
+    res.setHeader('Content-Disposition', response.headers['content-disposition'] || 'attachment; filename="template.xlsx"');
+    // Gửi file về
+    return res.send(response.data);
+  } catch (error) {
+    console.error('Lỗi khi proxy file Excel:', error);
+    return res.status(500).json({
+      status: 500,
+      message: 'Không thể tải file template MFG',
+      error: error?.message || 'Unknown error',
+    });
+  }
+});
 // code approval
 
 // resign
-app.post('/resign/getInfoResign',async (req, res) => {
+app.post('/resign/getInfoResign', async (req, res) => {
   try {
     const response = await fetch(`${SERVICES.RESIGN_SERVICE}/resign/getInfoResign`, {
       method: 'POST',
@@ -785,17 +831,21 @@ app.get('/health', (req, res) => {
 // noti 
 app.get('/notifications/users/:id', createServiceProxy(
   SERVICES.NOTI_SERVICE,
-  { '^/notifications/users/:id': (path, req) => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/notifications/users/${req.params.id}${query ? '?' + query : ''}`;
-  } }
+  {
+    '^/notifications/users/:id': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/notifications/users/${req.params.id}${query ? '?' + query : ''}`;
+    }
+  }
 ));
 app.get('/notifications/admin', createServiceProxy(
   SERVICES.NOTI_SERVICE,
-  { '^/notifications/admin': (path, req ) => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/notifications/admin${query ? '?' + query : ''}`;
-  } }
+  {
+    '^/notifications/admin': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/notifications/admin${query ? '?' + query : ''}`;
+    }
+  }
 ));
 app.post('/notifications/mark-read/:id', async (req, res) => {
   try {
@@ -811,14 +861,14 @@ app.post('/notifications/mark-read/:id', async (req, res) => {
     return res.status(response.status).json(data);
   } catch (error) {
     console.error('Mark Read Notification Error:', error);
-    return res.status(500).json({ 
-      code: 500,  
+    return res.status(500).json({
+      code: 500,
       status: "Error",
       message: "Failed to mark read notification",
       data: null
     });
   }
-} );  
+});
 
 // mailer 
 app.post('/send-email', async (req, res) => {
@@ -834,14 +884,14 @@ app.post('/send-email', async (req, res) => {
     });
     console.log(result);
     return res.json('ok');
-  } catch (error) { 
+  } catch (error) {
     console.error('Send Email Error:', error);
     return res.status(500).json({
       code: 500,
       status: "Error",
       message: "Failed to send email",
       data: null
-    }); 
+    });
   }
 });
 // sync company structure
@@ -851,24 +901,30 @@ app.get('/sync-company-structure', createServiceProxy(
 ));
 app.get('/sync-company-structure/all', createServiceProxy(
   SERVICES.SYNC_COMPANY_STRUCTURE_SERVICE,
-  { '^/sync-company-structure/all': (path, req)     => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/sync-company-structure/all${query ? '?' + query : ''}`;
-  } }
+  {
+    '^/sync-company-structure/all': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/sync-company-structure/all${query ? '?' + query : ''}`;
+    }
+  }
 ));
 app.get('/sync-company-structure/search', createServiceProxy(
   SERVICES.SYNC_COMPANY_STRUCTURE_SERVICE,
-  { '^/sync-company-structure/search': (path, req) => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/sync-company-structure/search${query ? '?' + query : ''}`;
-  } }
+  {
+    '^/sync-company-structure/search': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/sync-company-structure/search${query ? '?' + query : ''}`;
+    }
+  }
 ));
 app.get('/sumary-department/detail-sumary', createServiceProxy(
   SERVICES.SYNC_COMPANY_STRUCTURE_SERVICE,
-  { '^/sumary-department/detail-sumary': (path, req) => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/sumary-department/detail-sumary${query ? '?' + query : ''}`;
-  } }
+  {
+    '^/sumary-department/detail-sumary': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/sumary-department/detail-sumary${query ? '?' + query : ''}`;
+    }
+  }
 ));
 app.post('/sumary-department/add-adjust', async (req, res) => {
   try {
@@ -892,13 +948,220 @@ app.post('/sumary-department/add-adjust', async (req, res) => {
     });
   }
 });
-app.get('/sumary-department/info-headcount', createServiceProxy(  
+app.get('/sumary-department/info-headcount', createServiceProxy(
   SERVICES.SYNC_COMPANY_STRUCTURE_SERVICE,
-  { '^/sumary-department/info-headcount': (path, req) => {
-    const query = new URLSearchParams(req.query).toString();
-    return `/sumary-department/info-headcount${query ? '?' + query : ''}`;
-  } }
+  {
+    '^/sumary-department/info-headcount': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/sumary-department/info-headcount${query ? '?' + query : ''}`;
+    }
+  }
 ));
+// adoption
+
+
+app.get('/adoption/getAll-recode', createServiceProxy(
+  SERVICES.ADOPTION_SERVICE,
+  {
+    '^/adoption/getAll-recode': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/adoption/getAll-recode${query ? '?' + query : ''}`;
+    }
+  }
+));
+app.get('/adoption/get-adoption-details/:adoptionId', createServiceProxy(
+  SERVICES.ADOPTION_SERVICE,
+  {
+    '^/adoption/get-adoption-details/:adoptionId': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/adoption/get-adoption-details/${req.params.adoptionId}${query ? '?' + query : ''}`;
+    }
+  }
+));
+app.get('/adoption/getAll-adoption-admin', createServiceProxy(
+  SERVICES.ADOPTION_SERVICE,
+  {
+    '^/adoption/getAll-adoption-admin': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/adoption/getAll-adoption-admin${query ? '?' + query : ''}`;
+    }
+  }
+));
+app.get('/adoption/export-data-adoption', async (req, res) => {
+  try {
+    const { adoptionId, batchNumber } = req.query;
+
+    if (!adoptionId) {
+      return res.status(400).json({ status: 400, message: 'Thiếu adoptionId', data: null });
+    }
+    const queryString = new URLSearchParams({ adoptionId, batchNumber: batchNumber || '0' }).toString();
+    const targetUrl = `${SERVICES.ADOPTION_SERVICE}/adoption/export-data-adoption?${queryString}`;
+    const response = await fetch(targetUrl, {
+      method: 'GET',
+      timeout: 10000,
+    });
+
+    if (!response.ok) {
+      const errorJson = await response.json();
+      return res.status(response.status).json(errorJson);
+    }
+    res.set({
+      'Content-Type': response.headers.get('content-type') || 'application/octet-stream',
+      'Content-Disposition': response.headers.get('content-disposition') || 'attachment; filename="export.xlsx"',
+    });
+    response.body.pipe(res);
+  } catch (error) {
+    return res.status(500).json({
+      status: 500,
+      message: 'Lỗi gateway khi xuất dữ liệu adoption',
+      error: error.message,
+    });
+  }
+});
+app.post('/adoption/create-adoption-version-hr', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.ADOPTION_SERVICE}/adoption/create-adoption-version-hr`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Create Adoption Version Hr Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: 'Error',
+      message: 'Failed to create adoption version hr',
+      data: null
+    });
+  }
+});
+app.post('/adoption/create-adoption-batch/:adoptionId', async (req, res) => {
+  try {
+    const adoptionId = req.params.adoptionId
+    const response = await fetch(`${SERVICES.ADOPTION_SERVICE}/adoption/create-adoption-batch/` + adoptionId, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Create Adoption Version Hr Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: 'Error',
+      message: 'Failed to create adoption version hr',
+      data: null
+    });
+  }
+})
+app.post('/adoption/import-adoption-version-hr', upload.single('file'), async (req, res) => {
+  try {
+    const form = new FormData();
+    // 👇 append file vào form
+    form.append('file', req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: req.file.mimetype
+    });
+    // 👇 gửi request tới service gốc
+    const response = await fetch(`${SERVICES.ADOPTION_SERVICE}/adoption/import-adoption-version-hr`, {
+      method: 'POST',
+      body: form,
+      headers: form.getHeaders(),
+      timeout: 10000
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Import Adoption Version Hr Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: 'Error',
+      message: 'Failed to import adoption version hr',
+      data: null
+    });
+  }
+});
+app.post('/adoption/import-adoption-version-user', upload.single('file'), async (req, res) => {
+  try {
+    const form = new FormData();
+    // 👇 append file vào form
+    form.append('file', req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: req.file.mimetype
+    });
+    // 👇 gửi request tới service gốc
+    const response = await fetch(`${SERVICES.ADOPTION_SERVICE}/adoption/import-adoption-version-user`, {
+      method: 'POST',
+      body: form,
+      headers: form.getHeaders(),
+      timeout: 10000
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Import Adoption Version User Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: 'Error',
+      message: 'Failed to import adoption version user',
+      data: null
+    });
+  }
+});
+app.post('/requestRecruitment/update-rec-code', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/update-rec-code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Update Rec Code Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: 'Error',
+      message: 'Failed to update rec code',
+      data: null
+    });
+  }
+});
+app.post('/requestRecruitment/hrAnswer/:reqDepartmenrId', async (req, res) => {
+  try {
+    const { reqDepartmenrId } = req.params
+    const response = await fetch(`${SERVICES.REQUEST_RECRUITMENT_SERVICE}/requestRecruitment/hrAnswer/${reqDepartmenrId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Update Rec Code Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: 'Error',
+      message: 'Failed to update rec code',
+      data: null
+    });
+  }
+});
 // 404 handler
 app.use((_req, res) => {
   res.status(404).json({
@@ -908,7 +1171,6 @@ app.use((_req, res) => {
     data: null,
   });
 });
-
 // Error handling middleware
 app.use((err, _req, res, _next) => {
   console.error('Gateway Error:', err);
@@ -921,7 +1183,7 @@ app.use((err, _req, res, _next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0',()  => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Gateway is running on port ${PORT}`);
   console.log(`Auth service at: ${SERVICES.AUTH_SERVICE}`);
 });

@@ -21,6 +21,7 @@ interface IRequestRecruitment extends Document {
   createdAt: Date;
   updatedAt: Date;
   deptCode: string;
+  recCode: string;
 }
 const requestSchema = new mongoose.Schema({
   formType: { type: String, required: true }, // Tên form, ví dụ: 'MFGNEW , YCTD'
@@ -39,13 +40,13 @@ const requestSchema = new mongoose.Schema({
   },
   processing: {
     code: { type: String },
-
     title: { type: String },
   },
   nameForm: { type: Object, required: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   deptCode: { type: String },
+  recCode: { type: String },
 });
 requestSchema.plugin(mongoosePaginate); 
 interface IRequestRecruitmentPaginate<T extends Document> extends PaginateModel<T> {}

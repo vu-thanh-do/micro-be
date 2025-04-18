@@ -20,10 +20,16 @@ import DepartmentRecruitmentRequest from "../../../models/models-project/departm
 import ApprovalHistory from "../../../models/models-project/approvalHistory.model";
 import MfgReplaceRecruitmentRequest from "../../../models/models-project/mfgReplaceRecruitmentRequest.model";
 import MfgRecruitmentRequest from "../../../models/models-project/mfgRecruitmentRequest.model";
-
 interface IRecruitmentRequest {
   userId: string;
   positions: Array<any>;
+  infoDepartment: {
+    division: { type: String };
+    department: { type: String };
+    fiscalYear: { type: String };
+    month: { type: String };
+    dOrNonD: { type: String };
+  };
   total: number;
   hrAnswer: {
     dateOfAdoption: string;
@@ -40,7 +46,6 @@ interface IRecruitmentRequest {
   nameForm?: any;
   deptCode?: string;
 }
-
 // Interface cho dữ liệu phê duyệt
 interface IApprovalRequest {
   requestId: string;
@@ -67,7 +72,36 @@ class RequestRecruitmentController {
     this.notiService = notiService;
     this.uow = uow;
   }
-
+  @Post("/update-rec-code")
+  @HttpCode(200)
+  async updateRecCode(@Body() data: any, @Res() response: Response) {
+    try {
+      const { recCode, requestId } = data;
+      const checkRecCodeExist = await RequestRecruitment.findOne({ recCode });
+      if (checkRecCodeExist) {
+        return response.status(400).json({
+          status: 400,
+          message: "Mã yêu cầu tuyển dụng đã tồn tại",
+        });
+      }
+      const requestRecruitment = await RequestRecruitment.findByIdAndUpdate(
+        requestId,
+        { recCode },
+        { new: true }
+      );
+      return response.status(200).json({
+        status: 200,
+        message: "Cập nhật mã yêu cầu tuyển dụng thành công",
+        data: requestRecruitment,
+      });
+    } catch (error: any) {
+      return response.status(500).json({
+        status: 500,
+        message: "Lỗi khi cập nhật mã yêu cầu tuyển dụng",
+        error: error.message,
+      });
+    }
+  }
   @Post("/department/create")
   @HttpCode(201)
   async createRequestRecruitment(
@@ -109,6 +143,13 @@ class RequestRecruitmentController {
           comment: data.hrAnswer?.comment || "N/A",
         },
         positions: data.positions || [],
+        infoDepartment: {
+          division: data.infoDepartment.division,
+          department: data.infoDepartment.department,
+          fiscalYear: data.infoDepartment.fiscalYear,
+          month: data.infoDepartment.month,
+          dOrNonD: data.infoDepartment.dOrNonD,
+        },
         levelApproval:
           data.levelApproval?.map((level) => ({
             Id: level.Id || 1,
@@ -155,41 +196,41 @@ class RequestRecruitmentController {
 
       // 4. Gửi thông báo nếu cần
       // Tạo thông báo cho người phê duyệt cấp 1
-        if (data.levelApproval && data.levelApproval.length > 0) {
-          const firstApprover = data.levelApproval[0];
-          if (firstApprover.EmployeeId) {
-            const approverNotification: any = {
-              title: "Yêu cầu tuyển dụng mới",
-              content: "Bạn có yêu cầu mới cần phê duyệt",
-              type: "APPROVAL_NEEDED",
-              userId: firstApprover.EmployeeId,
-              role: "APPROVER",
-              requestId: requestRecruitment._id,
-              requestType: "DEPARTMENT",
-              isRead: false,
-              metadata: {
-                requestTitle: requestRecruitment.nameForm?.title || "",
-                requesterName: requestRecruitment.createdBy?.RequesterName || "",
-                requesterCode: requestRecruitment.createdBy?.RequesterCode || "",
-                approvalLevel: 1,
-                link: `/${requestRecruitment._id}`
-              }
-            };
-            try {
-              await this.notiService.create(
-                approverNotification as INoti,
-                this.uow,
-                sessionStart
-              );
-            } catch (error) {
-              console.error("Error creating notification:", error);
-              // Không throw error ở đây để không ảnh hưởng đến luồng chính
-            }
+      if (data.levelApproval && data.levelApproval.length > 0) {
+        const firstApprover = data.levelApproval[0];
+        if (firstApprover.EmployeeId) {
+          const approverNotification: any = {
+            title: "Yêu cầu tuyển dụng mới",
+            content: "Bạn có yêu cầu mới cần phê duyệt",
+            type: "APPROVAL_NEEDED",
+            userId: firstApprover.EmployeeId,
+            role: "APPROVER",
+            requestId: requestRecruitment._id,
+            requestType: "DEPARTMENT",
+            isRead: false,
+            metadata: {
+              requestTitle: requestRecruitment.nameForm?.title || "",
+              requesterName: requestRecruitment.createdBy?.RequesterName || "",
+              requesterCode: requestRecruitment.createdBy?.RequesterCode || "",
+              approvalLevel: 1,
+              link: `/${requestRecruitment._id}`,
+            },
+          };
+          try {
+            await this.notiService.create(
+              approverNotification as INoti,
+              this.uow,
+              sessionStart
+            );
+          } catch (error) {
+            console.error("Error creating notification:", error);
+            // Không throw error ở đây để không ảnh hưởng đến luồng chính
           }
         }
-      
+      }
+
       // Commit transaction
-      
+
       const adminNotification: any = {
         title: "Yêu cầu tuyển dụng mới",
         content: "Có yêu cầu tuyển dụng mới từ phòng ban",
@@ -203,8 +244,8 @@ class RequestRecruitmentController {
           requestTitle: requestRecruitment.nameForm?.title || "",
           requesterName: requestRecruitment.createdBy?.RequesterName || "",
           requesterCode: requestRecruitment.createdBy?.RequesterCode || "",
-          link: `/${requestRecruitment._id}`
-        }
+          link: `/${requestRecruitment._id}`,
+        },
       };
       try {
         await this.notiService.create(
@@ -276,9 +317,9 @@ class RequestRecruitmentController {
       }
 
       if (startDate && endDate) {
-        filter.createdAt = { 
-          $gte: new Date(startDate), 
-          $lte: new Date(endDate) 
+        filter.createdAt = {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate),
         };
       }
 
@@ -286,7 +327,7 @@ class RequestRecruitmentController {
       const result = await (RequestRecruitment as any).paginate(filter, {
         page,
         limit,
-        sort: { createdAt: -1 }
+        sort: { createdAt: -1 },
       });
 
       if (!result.docs || result.docs.length === 0) {
@@ -317,22 +358,20 @@ class RequestRecruitmentController {
 
       // 4. Tạo map để dễ dàng truy xuất thông tin chi tiết
       const detailsMap = new Map();
-      
+
       departmentRequests.forEach((dept: any) => {
         detailsMap.set(dept.requestId.toString(), {
-          type: 'DEPARTMENT',
-          data: dept
+          type: "DEPARTMENT",
+          data: dept,
         });
       });
 
       mfgReplaceRequests.forEach((mfgReplace: any) => {
         detailsMap.set(mfgReplace.requestId.toString(), {
-          type: 'MFG_REPLACE',
-          data: mfgReplace
+          type: "MFG_REPLACE",
+          data: mfgReplace,
         });
       });
-
-
 
       // 5. Transform dữ liệu
       const transformedData = result.docs.map((req: any) => {
@@ -341,30 +380,32 @@ class RequestRecruitmentController {
 
         const baseData = {
           _id: req._id,
-          requestId: req,  // Giữ toàn bộ thông tin từ RequestRecruitment
+          requestId: req, // Giữ toàn bộ thông tin từ RequestRecruitment
           formType: req.formType,
           status: req.status,
           createdBy: req.createdBy,
           processing: req.processing || [],
           nameForm: req.nameForm,
           createdAt: req.createdAt,
-          updatedAt: req.updatedAt
+          updatedAt: req.updatedAt,
         };
 
-        switch(details?.type) {
-          case 'DEPARTMENT':
+        switch (details?.type) {
+          case "DEPARTMENT":
             return {
               ...baseData,
               total: detailData.total || 0,
               positions: detailData.positions || [],
               hrAnswer: detailData.hrAnswer,
               levelApproval: detailData.levelApproval,
-              currentApprovalInfo: detailData.levelApproval?.find(
-                (level: any) => level.status === "pending"
-              ) || detailData.levelApproval?.[detailData.levelApproval.length - 1]
+              currentApprovalInfo:
+                detailData.levelApproval?.find(
+                  (level: any) => level.status === "pending"
+                ) ||
+                detailData.levelApproval?.[detailData.levelApproval.length - 1],
             };
 
-          case 'MFG_REPLACE':
+          case "MFG_REPLACE":
             return {
               ...baseData,
               year: detailData.year,
@@ -377,17 +418,19 @@ class RequestRecruitmentController {
               quantity: detailData.quantity,
               replacement: detailData.replacement || [],
               levelApproval: detailData.levelApproval,
-              currentApprovalInfo: detailData.levelApproval?.find(
-                (level: any) => level.status === "pending"
-              ) || detailData.levelApproval?.[detailData.levelApproval.length - 1]
+              currentApprovalInfo:
+                detailData.levelApproval?.find(
+                  (level: any) => level.status === "pending"
+                ) ||
+                detailData.levelApproval?.[detailData.levelApproval.length - 1],
             };
 
-          case 'MFG':
+          case "MFG":
             return {
               ...baseData,
               year: detailData.year,
               month: detailData.month,
-              requestByLine: detailData.requestByLine || []
+              requestByLine: detailData.requestByLine || [],
             };
 
           default:
@@ -572,7 +615,9 @@ class RequestRecruitmentController {
       } else if (data.status === "approved") {
         // Kiểm tra xem đây có phải là cấp cuối cùng không
         const maxLevel = Math.max(
-          ...departmentRequest.levelApproval.map((level: any) => level.level || 0)
+          ...departmentRequest.levelApproval.map(
+            (level: any) => level.level || 0
+          )
         );
         const isLastLevel = data.level === maxLevel;
 
@@ -833,7 +878,8 @@ class RequestRecruitmentController {
 
         // Tìm cấp phê duyệt của người dùng hiện tại
         const userApprovalLevel = levelApproval.find(
-          (level: any) => level.EmployeeId === approverId && level.status === null
+          (level: any) =>
+            level.EmployeeId === approverId && level.status === null
         );
 
         return {
@@ -964,7 +1010,7 @@ class RequestRecruitmentController {
           });
         });
       }
-      
+
       // 6. Cập nhật thời gian
       if (!existingDepartmentRequest.additionalInfo) {
         existingDepartmentRequest.additionalInfo = {};
@@ -1023,11 +1069,15 @@ class RequestRecruitmentController {
               requesterName: existingRequest.createdBy?.RequesterName || "",
               requesterCode: existingRequest.createdBy?.RequesterCode || "",
               approvalLevel: 1,
-              link: `/${id}`
-            }
+              link: `/${id}`,
+            },
           };
 
-          await this.notiService.create(approverNotification as INoti, this.uow, sessionStart);
+          await this.notiService.create(
+            approverNotification as INoti,
+            this.uow,
+            sessionStart
+          );
         }
       }
 
@@ -1045,11 +1095,15 @@ class RequestRecruitmentController {
           requestTitle: existingRequest.nameForm?.title || "",
           requesterName: existingRequest.createdBy?.RequesterName || "",
           requesterCode: existingRequest.createdBy?.RequesterCode || "",
-          link: `/${id}`
-        }
+          link: `/${id}`,
+        },
       };
 
-      await this.notiService.create(adminNotification as INoti, this.uow, sessionStart);
+      await this.notiService.create(
+        adminNotification as INoti,
+        this.uow,
+        sessionStart
+      );
 
       // Commit transaction
       await this.uow.commit();
@@ -1209,11 +1263,15 @@ class RequestRecruitmentController {
             requesterName: existingRequest.createdBy?.RequesterName || "",
             requesterCode: existingRequest.createdBy?.RequesterCode || "",
             approvalLevel: currentApprover.level,
-            link: `/${id}`
-          }
+            link: `/${id}`,
+          },
         };
 
-        await this.notiService.create(approverNotification as INoti, this.uow, sessionStart);
+        await this.notiService.create(
+          approverNotification as INoti,
+          this.uow,
+          sessionStart
+        );
       }
 
       // Gửi thông báo cho admin
@@ -1230,11 +1288,15 @@ class RequestRecruitmentController {
           requestTitle: existingRequest.nameForm?.title || "",
           requesterName: existingRequest.createdBy?.RequesterName || "",
           requesterCode: existingRequest.createdBy?.RequesterCode || "",
-          link: `/${id}`
-        }
+          link: `/${id}`,
+        },
       };
 
-      await this.notiService.create(adminNotification as INoti, this.uow, sessionStart);
+      await this.notiService.create(
+        adminNotification as INoti,
+        this.uow,
+        sessionStart
+      );
 
       // Commit transaction
       await this.uow.commit();
@@ -1281,7 +1343,7 @@ class RequestRecruitmentController {
       const processingCode = (req.query.processingCode as string) || "all";
       // 1. Xây dựng filter cho RequestRecruitment
       const filter: any = {
-        "createdBy.userId": userId
+        "createdBy.userId": userId,
       };
 
       if (status && status !== "all") {
@@ -1295,7 +1357,7 @@ class RequestRecruitmentController {
       if (startDate && endDate) {
         filter.createdAt = {
           $gte: new Date(startDate),
-          $lte: new Date(endDate)
+          $lte: new Date(endDate),
         };
       }
 
@@ -1310,7 +1372,7 @@ class RequestRecruitmentController {
       const result = await (RequestRecruitment as any).paginate(filter, {
         page,
         limit,
-        sort: sortOption
+        sort: sortOption,
       });
 
       if (!result.docs || result.docs.length === 0) {
@@ -1334,34 +1396,35 @@ class RequestRecruitmentController {
       // 3. Lấy thông tin chi tiết từ các bảng khác
       const requestIds = result.docs.map((req: any) => req._id);
 
-      const [departmentRequests, mfgReplaceRequests, mfgRequests] = await Promise.all([
-        DepartmentRecruitmentRequest.find({ requestId: { $in: requestIds } }),
-        MfgReplaceRecruitmentRequest.find({ requestId: { $in: requestIds } }),
-        MfgRecruitmentRequest.find({ requestId: { $in: requestIds } }),
-      ]);
+      const [departmentRequests, mfgReplaceRequests, mfgRequests] =
+        await Promise.all([
+          DepartmentRecruitmentRequest.find({ requestId: { $in: requestIds } }),
+          MfgReplaceRecruitmentRequest.find({ requestId: { $in: requestIds } }),
+          MfgRecruitmentRequest.find({ requestId: { $in: requestIds } }),
+        ]);
 
       // 4. Tạo map để dễ dàng truy xuất thông tin chi tiết
       const detailsMap = new Map();
-      
+
       departmentRequests.forEach((dept: any) => {
         detailsMap.set(dept.requestId.toString(), {
-          type: 'DEPARTMENT',
-          data: dept
+          type: "DEPARTMENT",
+          data: dept,
         });
       });
 
       mfgReplaceRequests.forEach((mfgReplace: any) => {
-        console.log(mfgReplace,'mfgReplace')
+        console.log(mfgReplace, "mfgReplace");
         detailsMap.set(mfgReplace.requestId.toString(), {
-          type: 'MFG_REPLACE',
-          data: mfgReplace
+          type: "MFG_REPLACE",
+          data: mfgReplace,
         });
       });
       mfgRequests.forEach((mfg: any) => {
-        console.log(mfg,'mfg')
+        console.log(mfg, "mfg");
         detailsMap.set(mfg.requestId.toString(), {
-          type: 'MFG',
-          data: mfg
+          type: "MFG",
+          data: mfg,
         });
       });
 
@@ -1372,35 +1435,36 @@ class RequestRecruitmentController {
 
         const baseData = {
           _id: req._id,
-          requestId: req,  // Giữ toàn bộ thông tin từ RequestRecruitment
+          requestId: req, // Giữ toàn bộ thông tin từ RequestRecruitment
           formType: req.formType,
           status: req.status,
           createdBy: req.createdBy,
           processing: req.processing || [],
           nameForm: req.nameForm,
           createdAt: req.createdAt,
-          updatedAt: req.updatedAt
+          updatedAt: req.updatedAt,
         };
 
-        switch(details?.type) {
-          case 'DEPARTMENT':
+        switch (details?.type) {
+          case "DEPARTMENT":
             return {
               ...baseData,
               total: detailData.total || 0,
               positions: detailData.positions || [],
               hrAnswer: detailData.hrAnswer,
               levelApproval: detailData.levelApproval,
-              currentApprovalInfo: detailData.levelApproval?.find(
-                (level: any) => level.status === "pending"
-              ) || detailData.levelApproval?.[detailData.levelApproval.length - 1]
+              currentApprovalInfo:
+                detailData.levelApproval?.find(
+                  (level: any) => level.status === "pending"
+                ) ||
+                detailData.levelApproval?.[detailData.levelApproval.length - 1],
             };
 
-          case 'MFG_REPLACE':
+          case "MFG_REPLACE":
             return {
               ...baseData,
               year: detailData.year,
               month: detailData.month,
-              recCode: detailData.recCode,
               division: detailData.division,
               department: detailData.department,
               position: detailData.position,
@@ -1408,12 +1472,14 @@ class RequestRecruitmentController {
               quantity: detailData.quantity,
               replacement: detailData.replacement || [],
               levelApproval: detailData.levelApproval,
-              currentApprovalInfo: detailData.levelApproval?.find(
-                (level: any) => level.status === "pending"
-              ) || detailData.levelApproval?.[detailData.levelApproval.length - 1]
+              currentApprovalInfo:
+                detailData.levelApproval?.find(
+                  (level: any) => level.status === "pending"
+                ) ||
+                detailData.levelApproval?.[detailData.levelApproval.length - 1],
             };
 
-          case 'MFG':
+          case "MFG":
             return {
               ...baseData,
               year: detailData.year,
@@ -1430,9 +1496,11 @@ class RequestRecruitmentController {
               conclusion: detailData.conclusion || {},
               total: detailData.total || 0,
               levelApproval: detailData.levelApproval || [],
-              currentApprovalInfo: detailData.levelApproval?.find(
-                (level: any) => level.status === "pending"
-              ) || detailData.levelApproval?.[detailData.levelApproval.length - 1]
+              currentApprovalInfo:
+                detailData.levelApproval?.find(
+                  (level: any) => level.status === "pending"
+                ) ||
+                detailData.levelApproval?.[detailData.levelApproval.length - 1],
             };
 
           default:
@@ -1459,7 +1527,8 @@ class RequestRecruitmentController {
       console.error("Error in getUserRequests:", error);
       return response.status(500).json({
         status: 500,
-        message: "Đã xảy ra lỗi khi lấy danh sách yêu cầu tuyển dụng của người dùng",
+        message:
+          "Đã xảy ra lỗi khi lấy danh sách yêu cầu tuyển dụng của người dùng",
         error: error.message,
       });
     }
@@ -1476,7 +1545,7 @@ class RequestRecruitmentController {
       if (!sessionStart) {
         throw new Error("Session failed to start");
       }
-      
+
       const existingRequest = await RequestRecruitment.findById(id);
       if (!existingRequest) {
         return response.status(404).json({
@@ -1489,7 +1558,7 @@ class RequestRecruitmentController {
         existingRequest.processing = {
           title: data.processing.title,
           code: data.processing.code,
-        }
+        };
       }
       await existingRequest.save({ session: sessionStart });
 
@@ -1508,11 +1577,15 @@ class RequestRecruitmentController {
           requesterName: existingRequest.createdBy?.RequesterName || "",
           requesterCode: existingRequest.createdBy?.RequesterCode || "",
           processingStatus: data.processing,
-          link: `/${id}`
-        }
+          link: `/${id}`,
+        },
       };
 
-      await this.notiService.create(userNotification as INoti, this.uow, sessionStart);
+      await this.notiService.create(
+        userNotification as INoti,
+        this.uow,
+        sessionStart
+      );
 
       // Gửi thông báo cho admin
       const adminNotification: any = {
@@ -1529,11 +1602,15 @@ class RequestRecruitmentController {
           requesterName: existingRequest.createdBy?.RequesterName || "",
           requesterCode: existingRequest.createdBy?.RequesterCode || "",
           processingStatus: data.processing,
-          link: `/${id}`
-        }
+          link: `/${id}`,
+        },
       };
 
-      await this.notiService.create(adminNotification as INoti, this.uow, sessionStart);
+      await this.notiService.create(
+        adminNotification as INoti,
+        this.uow,
+        sessionStart
+      );
 
       await this.uow.commit();
       return response.status(200).json({
@@ -1551,6 +1628,61 @@ class RequestRecruitmentController {
       });
     }
   }
+  @Post("/hrAnswer/:reqDepartmenrId")
+  @HttpCode(200)
+  async hrAnswer(
+    @Param("reqDepartmenrId") reqDepartmenrId: string,
+    @Body() body: any,
+    @Req() req: Request,
+    @Res() response: Response
+  ) {
+    try {
+      const checkReq = await DepartmentRecruitmentRequest.findOne({
+        requestId:  reqDepartmenrId
+      });
+      if (!checkReq) {
+        return response.status(404).json({
+          status: 404,
+          message: "Không tồn tại yêu cầu phòng ban này",
+        });
+      }
+      const {
+        typeRecruit,
+        numberOfAdopt,
+        comment
+      } = body;
+  
+      // Kiểm tra và cập nhật hrAnswer mới
+      checkReq.hrAnswer = {
+        typeRecruit: {
+          isSelectInternal: typeRecruit?.isSelectInternal ?? false,
+          isSelectExternal: typeRecruit?.isSelectExternal ?? false,
+          fromDateInternal: typeRecruit?.fromDateInternal,
+          toDateInternal: typeRecruit?.toDateInternal,
+          fromDateExternal: typeRecruit?.fromDateExternal,
+          toDateExternal: typeRecruit?.toDateExternal,
+        },
+        numberOfAdopt,
+        comment,
+      };
+  
+      await checkReq.save();
+  
+      return response.status(200).json({
+        status: 200,
+        message: "Cập nhật hrAnswer thành công",
+        data: checkReq.hrAnswer,
+      });
+    } catch (error: any) {
+      console.error("Lỗi trong hrAnswer:", error);
+      return response.status(500).json({
+        status: 500,
+        message: "Đã xảy ra lỗi khi cập nhật hrAnswer",
+        error: error.message,
+      });
+    }
+  }
+  
 }
 
 export default RequestRecruitmentController;

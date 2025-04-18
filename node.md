@@ -20,7 +20,6 @@ rs.reconfig({
                         "hidden" : false,
                         "priority" : 1,
                         "tags" : {
-
                         },
                         "secondaryDelaySecs" : NumberLong(0),
                         "votes" : 1
