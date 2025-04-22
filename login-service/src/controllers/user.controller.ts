@@ -4,6 +4,8 @@ import Users from "../model/user.model";
 import jwt from "jsonwebtoken";
 import { apiGetInfoUserEzV4 } from "../config/axios";
 import { Op } from "sequelize";
+import { sendRpcRequest, sendToQueue } from "../config/rabbitMQ/rabbitMq";
+import Role from "../model/role.model";
 
 export const UserController = {
   getOneUser: async (req: Request, res: Response): Promise<any> => {
@@ -41,13 +43,25 @@ export const UserController = {
     try {
       const { UserId } = req.user;
       const user = await Users.findByPk(UserId);
+  
       if (!user) {
         return res.status(400).json({
           status: 400,
           data: null,
-          message: "Token không hợp lệ hoặc user không tồn tại !",
+          message: "Token không hợp lệ hoặc user không tồn tại!",
         });
       }
+  
+      const dataRole = await Role.findByPk(user.RoleId);
+  
+      if (!dataRole) {
+        return res.status(400).json({
+          status: 400,
+          data: null,
+          message: "Không tìm thấy Role tương ứng!",
+        });
+      }
+  
       const dataSaveRedis = {
         UserId: user.UserId,
         Username: user.Username,
@@ -55,7 +69,10 @@ export const UserController = {
         RoleId: user.RoleId,
         Avatar: user.Avatar,
         EmployeeCode: user.EmployeeCode,
+        RoleName: dataRole.RoleName,
+        Permission: dataRole.Permission, // Đã parse JSON nhờ getter trong model
       };
+  
       return res.status(200).json({
         status: 200,
         data: dataSaveRedis,
@@ -67,6 +84,7 @@ export const UserController = {
       });
     }
   },
+  
   getInfoUserFromCode: async (req: Request, res: Response): Promise<any> => {
     try {
       const { code } = req.params;

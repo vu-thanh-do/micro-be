@@ -351,6 +351,15 @@ app.get('/requestRecruitment/department/get-all', createServiceProxy(
     }
   }
 ));
+app.get('/pendingApproval/user/:id', (req, res, next) => {
+  const id = req.params.id;
+  const query = new URLSearchParams(req.query).toString();
+  const targetPath = `/pendingApproval/user/${id}${query ? '?' + query : ''}`;
+  req.url = targetPath;
+  createServiceProxy(SERVICES.REQUEST_RECRUITMENT_SERVICE)(req, res, next);
+});
+
+
 app.get('/requestRecruitment/department/:id', createServiceProxy(
   SERVICES.REQUEST_RECRUITMENT_SERVICE,
   {
@@ -791,9 +800,114 @@ app.get('/requestRecruitment/mfgNew/export-template-mfg-new', async (req, res) =
 // code approval
 
 // resign
+app.post('/resign/create-resign-specific',async(req,res)=>{
+  try{
+    const response = await fetch(`${SERVICES.RESIGN_SERVICE}/resign/create-resign-specific`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  }catch (error) {
+    return res.status(500).json({
+      status: 500,
+      message: 'Không thể tải ',
+      error: error?.message || 'Unknown error',
+    });
+  }
+})
+app.post('/resign/delete-multiple-employees',async(req,res)=>{
+  try{
+    const response = await fetch(`${SERVICES.RESIGN_SERVICE}/resign/delete-multiple-employees`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  }catch (error) {
+    return res.status(500).json({
+      status: 500,
+      message: 'Không thể tải ',
+      error: error?.message || 'Unknown error',
+    });
+  }
+})
+app.delete('/resign/resign-specific/:deptName/:employeeId', async (req, res) => {
+  const { deptName, employeeId } = req.params; // Lấy tham số từ URL
+  try {
+    const response = await fetch(`${SERVICES.RESIGN_SERVICE}/resign/resign-specific/${deptName}/${employeeId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000, // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    return res.status(500).json({
+      status: 500,
+      message: 'Không thể tải',
+      error: error?.message || 'Unknown error',
+    });
+  }
+});
+app.delete('/resign/resign-specific/:deptName', async (req, res) => {
+  const { deptName } = req.params; // Lấy tham số từ URL
+  try {
+    const response = await fetch(`${SERVICES.RESIGN_SERVICE}/resign/resign-specific/${deptName}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000, // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    return res.status(500).json({
+      status: 500,
+      message: 'Không thể tải',
+      error: error?.message || 'Unknown error',
+    });
+  }
+});
+
 app.post('/resign/getInfoResign', async (req, res) => {
   try {
     const response = await fetch(`${SERVICES.RESIGN_SERVICE}/resign/getInfoResign`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Get Info Resign Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to get info resign",
+      data: null
+    });
+  }
+});
+app.post('/resign/get-resign-specific', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.RESIGN_SERVICE}/resign/get-resign-specific`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -917,6 +1031,15 @@ app.get('/sync-company-structure/search', createServiceProxy(
     }
   }
 ));
+app.get('/sync-company-structure/all-department-version-2', createServiceProxy(
+  SERVICES.SYNC_COMPANY_STRUCTURE_SERVICE,
+  {
+    '^/sync-company-structure/all-department-version-2': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/sync-company-structure/all-department-version-2${query ? '?' + query : ''}`;
+    }
+  }
+));
 app.get('/sumary-department/detail-sumary', createServiceProxy(
   SERVICES.SYNC_COMPANY_STRUCTURE_SERVICE,
   {
@@ -978,12 +1101,48 @@ app.get('/adoption/get-adoption-details/:adoptionId', createServiceProxy(
     }
   }
 ));
+app.get('/adoption/get-adoption/:adoptionId', createServiceProxy(
+  SERVICES.ADOPTION_SERVICE,
+  {
+    '^/adoption/get-adoption/:adoptionId': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/adoption/get-adoption/${req.params.adoptionId}${query ? '?' + query : ''}`;
+    }
+  }
+));
+app.get('/adoption/getall-adoption-user/:userId', createServiceProxy(
+  SERVICES.ADOPTION_SERVICE,
+  {
+    '^/adoption/getall-adoption-user/:userId': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/adoption/getall-adoption-user/${req.params.adoptionId}${query ? '?' + query : ''}`;
+    }
+  }
+));
 app.get('/adoption/getAll-adoption-admin', createServiceProxy(
   SERVICES.ADOPTION_SERVICE,
   {
     '^/adoption/getAll-adoption-admin': (path, req) => {
       const query = new URLSearchParams(req.query).toString();
       return `/adoption/getAll-adoption-admin${query ? '?' + query : ''}`;
+    }
+  }
+));
+app.get('/history-approve', createServiceProxy(
+  SERVICES.ADOPTION_SERVICE,
+  {
+    '^/history-approve': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/history-approve${query ? '?' + query : ''}`;
+    }
+  }
+));
+app.get('/adoption/load-recCode', createServiceProxy(
+  SERVICES.ADOPTION_SERVICE,
+  {
+    '^/adoption/load-recCode': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/adoption/load-recCode${query ? '?' + query : ''}`;
     }
   }
 ));

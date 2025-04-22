@@ -91,4 +91,28 @@ export class SyncCompanyStructureController {
       return response.status(500).json({ message: "Lỗi server", error });
     }
   }
+  @Get("/all-department-version-2")
+  @HttpCode(200)
+  async getAllDepartmentVersion2(
+    @QueryParam("page") page: number,
+    @QueryParam("limit") limit: number,
+    @QueryParam("search") search: string,
+    @Res() response: Response
+  ) {
+    try {
+      const cacheKey = `companyStructure:page=${page || 1}&limit=${limit || 10}&search=${search}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        console.log("✅ Cache hit");
+        return response.json(JSON.parse(cached));
+      }
+      const data = await this.companySyncService.getAllDepartmentVersion2({ page, limit, search });
+      await redis.set(cacheKey, JSON.stringify(data), "EX", 60 * 60 * 24); // TTL: 24h
+      console.log("📦 Cache set");
+      return response.json(data);
+    } catch (error) {
+      console.error("❌ Lỗi lấy danh sách phòng ban:", error);
+      return response.status(500).json({ message: "Lỗi server", error });
+    }
+  }
 }

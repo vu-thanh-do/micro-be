@@ -1,0 +1,302 @@
+# API Quản lý thông tin nghỉ việc đặc biệt
+
+## 1. Lấy thông tin nghỉ việc đặc biệt của một phòng ban
+
+**Endpoint:** POST /resign/get-resign-specific
+**Method:** POST
+**Mô tả:** Lấy danh sách thông tin nghỉ việc đặc biệt của một phòng ban cụ thể.
+
+**Tham số đầu vào:**
+```json
+{
+  "deptName": "IS" // Mã phòng ban cần lấy thông tin (bắt buộc)
+}
+```
+
+**Kết quả trả về:**
+```json
+{
+  "status": 200,
+  "message": "Lấy thông tin nghỉ việc đặc biệt thành công",
+  "data": {
+    "_id": "67d7c42f8d0367ecc50eb16c",
+    "group": "resign",
+    "key": "resign-IS",
+    "data": {
+      "dept": "IS",
+      "info": [
+        {
+          "_id": "1",
+          "code": "x",
+          "name": "x",
+          "division": "x",
+          "section": "x",
+          "position": "x",
+          "grade": "x",
+          "entryDate": "x",
+          "actualLeaveDate": "x",
+          "note": "x"
+        }
+      ]
+    },
+    "createdAt": "2025-03-17T06:41:51.164Z",
+    "updatedAt": "2025-03-17T06:41:51.164Z"
+  }
+}
+```
+
+## 2. Tạo hoặc cập nhật thông tin nghỉ việc đặc biệt
+
+**Endpoint:** POST /resign/create-resign-specific
+**Method:** POST
+**Mô tả:** Tạo mới hoặc cập nhật thông tin nghỉ việc đặc biệt cho một phòng ban. Nếu phòng ban chưa có dữ liệu, sẽ tạo mới. Nếu đã có, sẽ thêm nhân viên vào danh sách hiện có.
+
+**Tham số đầu vào:**
+```json
+{
+  "deptName": "IS", // Mã phòng ban (bắt buộc)
+  "info": { // Thông tin nhân viên (có thể là một đối tượng hoặc một mảng các đối tượng)
+    "_id": "2", // ID của nhân viên (bắt buộc và phải là duy nhất trong phòng ban)
+    "code": "123456", // Mã nhân viên
+    "name": "Nguyễn Văn A", // Tên nhân viên
+    "division": "IT", // Phòng ban lớn
+    "section": "Development", // Bộ phận
+    "position": "Developer", // Vị trí
+    "grade": "A2", // Cấp bậc
+    "entryDate": "2023-01-01", // Ngày vào công ty
+    "actualLeaveDate": "2024-03-31", // Ngày nghỉ việc thực tế
+    "note": "Nghỉ việc vì lý do cá nhân" // Ghi chú
+  }
+}
+```
+
+**Hoặc khi thêm nhiều nhân viên cùng lúc:**
+```json
+{
+  "deptName": "IS",
+  "info": [
+    {
+      "_id": "3",
+      "code": "654321",
+      "name": "Trần Thị B",
+      "division": "IT",
+      "section": "Testing",
+      "position": "Tester",
+      "grade": "A1",
+      "entryDate": "2022-05-15",
+      "actualLeaveDate": "2024-04-15",
+      "note": "Nghỉ việc vì lý do sức khỏe"
+    },
+    {
+      "_id": "4",
+      "code": "789012",
+      "name": "Lê Văn C",
+      "division": "IT",
+      "section": "Operations",
+      "position": "System Admin",
+      "grade": "A3",
+      "entryDate": "2021-10-01",
+      "actualLeaveDate": "2024-03-10",
+      "note": "Nghỉ việc để du học"
+    }
+  ]
+}
+```
+
+**Kết quả trả về khi tạo mới:**
+```json
+{
+  "status": 201,
+  "message": "Tạo thông tin nghỉ việc đặc biệt thành công",
+  "data": { /* Document vừa được tạo */ }
+}
+```
+
+**Kết quả trả về khi cập nhật:**
+```json
+{
+  "status": 200,
+  "message": "Cập nhật thông tin nghỉ việc đặc biệt thành công",
+  "data": { /* Document sau khi cập nhật */ }
+}
+```
+
+## 3. Xóa một nhân viên nghỉ việc đặc biệt
+
+**Endpoint:** DELETE /resign/resign-specific/:deptName/:employeeId
+**Method:** DELETE
+**Mô tả:** Xóa một nhân viên khỏi danh sách nghỉ việc đặc biệt của phòng ban.
+
+**Tham số đường dẫn:**
+- `deptName`: Mã phòng ban (bắt buộc)
+- `employeeId`: ID của nhân viên cần xóa (bắt buộc)
+
+**Kết quả trả về:**
+```json
+{
+  "status": 200,
+  "message": "Xóa thông tin nhân viên nghỉ việc đặc biệt thành công",
+  "data": { /* Document sau khi xóa nhân viên */ }
+}
+```
+
+## 4. Xóa nhiều nhân viên nghỉ việc đặc biệt
+
+**Endpoint:** POST /resign/delete-multiple-employees
+**Method:** POST
+**Mô tả:** Xóa nhiều nhân viên khỏi danh sách nghỉ việc đặc biệt của phòng ban.
+
+**Tham số đầu vào:**
+```json
+{
+  "deptName": "IS", // Mã phòng ban (bắt buộc)
+  "employeeIds": ["3", "4"] // Mảng ID của các nhân viên cần xóa (bắt buộc)
+}
+```
+
+**Kết quả trả về:**
+```json
+{
+  "status": 200,
+  "message": "Đã xóa 2 nhân viên nghỉ việc đặc biệt",
+  "data": { /* Document sau khi xóa nhiều nhân viên */ }
+}
+```
+
+## 5. Xóa toàn bộ thông tin nghỉ việc đặc biệt của một phòng ban
+
+**Endpoint:** DELETE /resign/resign-specific/:deptName
+**Method:** DELETE
+**Mô tả:** Xóa toàn bộ thông tin nghỉ việc đặc biệt của một phòng ban.
+
+**Tham số đường dẫn:**
+- `deptName`: Mã phòng ban cần xóa thông tin (bắt buộc)
+
+**Kết quả trả về:**
+```json
+{
+  "status": 200,
+  "message": "Xóa thông tin nghỉ việc đặc biệt thành công",
+  "data": {
+    "acknowledged": true,
+    "deletedCount": 1
+  }
+}
+```
+
+## 6. Lấy danh sách nhân viên nghỉ việc từ cơ sở dữ liệu EzV4
+
+**Endpoint:** GET /requestRecruitment/mfgReplace/getListEmpResignMfg
+**Method:** GET
+**Mô tả:** Lấy danh sách nhân viên nghỉ việc từ cơ sở dữ liệu EzV4, đã được lọc để loại bỏ những nhân viên đã được thêm vào danh sách nghỉ việc đặc biệt (IgnoreEmployees).
+
+**Tham số query:**
+- `page`: Số trang (mặc định: 1)
+- `limit`: Số lượng bản ghi trên mỗi trang (mặc định: 10)
+- `search`: Từ khóa tìm kiếm theo mã nhân viên (mặc định: "")
+- `typeFilter`: Loại bộ lọc phòng ban ("mfg1", "mfg2", hoặc "all", mặc định: "mfg1")
+
+**Kết quả trả về:**
+```json
+{
+  "status": 200,
+  "message": "Lấy danh sách nhân viên nghỉ việc thành công",
+  "data": [
+    {
+      "ResignID": 2330,
+      "EmployeeID": 13502,
+      "EmployeeCode": "972944",
+      "FullName": "Nguyễn Văn A",
+      "Email": null,
+      "JoinDate": "2024-11-01",
+      "Detail": "Other",
+      "DaysOfNotification": 30,
+      "IsLegal": false,
+      "LastWorkingDate": "2025-03-20",
+      "DecisionNo": "018/24/QĐ-HR-DMVN(26)",
+      "DecisionDate": "2025-03-20",
+      "NoOfViolationDays": 21,
+      "IsNeedReplacement": true,
+      "RecruitmentPeriod": 0,
+      "ResignDate": "2025-03-21",
+      "DepartmentID": 413,
+      "teamId": 413,
+      "teamName": "Mizusumasi",
+      "groupId": 571,
+      "groupName": "Group 41",
+      "sectionId": 101,
+      "sectionName": "Distribution",
+      "departmentId": 43,
+      "departmentName": "Production II-2",
+      "divisionId": 11,
+      "divisionName": "Manufacturing 1",
+      "position": "Associate",
+      "grade": "Y5"
+    },
+    // ... các nhân viên khác
+  ],
+  "pagination": {
+    "total": 120,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 12
+  }
+}
+```
+
+## 7. Lấy thông tin nghỉ việc (kết hợp dữ liệu đặc biệt và EzV4)
+
+**Endpoint:** POST /resign/getInfoResign
+**Method:** POST
+**Mô tả:** Lấy thông tin nghỉ việc kết hợp giữa dữ liệu đặc biệt và dữ liệu từ EzV4.
+
+**Tham số đầu vào:**
+```json
+{
+  "deptName": "IS", // Mã phòng ban cho thông tin đặc biệt
+  "dept": "42" // Mã phòng ban cho dữ liệu EzV4
+}
+```
+
+**Kết quả trả về:**
+```json
+{
+  "status": 200,
+  "message": "thành công",
+  "data": {
+    "specificInfo": [
+      {
+        "_id": "1",
+        "code": "x",
+        "name": "x",
+        // ... các thông tin khác
+      }
+    ],
+    "infoEzv4": [
+      {
+        "ResignID": 2330,
+        "EmployeeID": 13502,
+        "EmployeeCode": "972944",
+        // ... các thông tin khác
+      }
+    ]
+  }
+}
+```
+
+# Lưu ý quan trọng:
+
+1. **Cấu trúc dữ liệu**: Tất cả dữ liệu nghỉ việc đặc biệt được lưu trong collection `language` với format:
+   - `group`: "resign"
+   - `key`: "resign-{deptName}" (ví dụ: "resign-IS")
+   - `data`: Chứa đối tượng với `dept` và mảng `info` của các nhân viên
+
+2. **ID nhân viên**: Trường `_id` của mỗi nhân viên phải là duy nhất trong phạm vi mỗi phòng ban.
+
+3. **Xử lý lỗi**: Tất cả các API đều trả về mã lỗi và thông báo phù hợp khi có vấn đề xảy ra.
+
+4. **Phân trang**: API lấy danh sách nhân viên từ EzV4 hỗ trợ phân trang và tìm kiếm.
+
+5. **Lọc theo phòng ban**: Hỗ trợ lọc theo mfg1, mfg2 hoặc tất cả.
+
+6. **Bảo mật**: Xác thực và phân quyền cho các API này nên được xử lý ở tầng trên. 

@@ -8,7 +8,7 @@ import {
   Res,
   Param,
   Put,
-  Delete
+  Delete,
 } from "routing-controllers";
 import { NotificationService } from "../../../services/services/notification.service";
 import { UnitOfWork } from "../../../unitOfWork/unitOfWork";
@@ -17,7 +17,9 @@ import { Request, Response } from "express";
 import MfgReplaceRecruitmentRequest from "../../../models/models-project/mfgReplaceRecruitmentRequest.model";
 import RequestRecruitment from "../../../models/models-project/requestRecruitment.model";
 import ApprovalHistory from "../../../models/models-project/approvalHistory.model";
+import IgnoreEmployees from "../../../models/models-project/ignoreEmployees.mode";
 import mongoose from "mongoose";
+import { CompanySyncService } from "../../../services/services/companySync.service";
 
 interface IMfgReplaceRequest {
   userId: string;
@@ -58,7 +60,7 @@ interface IApprovalRequest {
   approverName: string;
   approverCode: string;
   level: number;
-  status: 'approved' | 'rejected';
+  status: "approved" | "rejected";
   reasonReject?: string;
   comment?: string;
   nextApproverCode?: string;
@@ -68,16 +70,49 @@ interface IApprovalRequest {
 @JsonController("/requestRecruitment/mfgReplace")
 class MfgReplaceRecuitmentController {
   private notiService: NotificationService;
+  private companySyncService: CompanySyncService;
   private uow: UnitOfWork;
-  
+
   constructor(
     @inject(NotificationService) notiService: NotificationService,
-    @inject(UnitOfWork) uow: UnitOfWork
-  ) { 
+    @inject(UnitOfWork) uow: UnitOfWork,
+    @inject(CompanySyncService) companySyncService: CompanySyncService
+  ) {
     this.notiService = notiService;
     this.uow = uow;
+    this.companySyncService = companySyncService;
   }
-
+  @Get("/getListEmpResignMfg")
+  async getListEmpResignMfg(@Req() req: Request, @Res() response: Response) {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const search = req.query.search as string || "";
+      const typeFilter = req.query.typeFilter || ("mfg1" as string);
+      const ignoreEmployees = await IgnoreEmployees.find().select("code");
+      const ignoreCodes = ignoreEmployees.map(emp => emp.code);
+      const result = await this.companySyncService.getInfoResignMfg({
+        page,
+        limit,
+        search,
+        typeFilter: typeFilter as string,
+        ignoreCodes
+      });
+      
+      return response.status(200).json({
+        status: 200,
+        message: "Lấy danh sách nhân viên nghỉ việc thành công",
+        data: result.data,
+        pagination: result.pagination
+      });
+    } catch (error: any) {
+      return response.status(500).json({
+        status: 500,
+        message: "Đã xảy ra lỗi khi lấy danh sách nhân viên nghỉ việc",
+        error: error.message,
+      });
+    }
+  }
   @Post("/create")
   @HttpCode(201)
   async create(@Body() data: IMfgReplaceRequest, @Res() response: Response) {
@@ -120,29 +155,45 @@ class MfgReplaceRecuitmentController {
         quantity: data.quantity || 0,
         status: data.status || false,
         replacement: data.replacement || [],
-        levelApproval: data.levelApproval?.map((level) => ({
-          Id: level.Id || 1,
-          level: level.level || 1,
-          status: level.status || "pending",
-          reasonReject: level.reasonReject || "N/A",
-          approveTime: level.approveTime || new Date().toISOString(),
-          codeUserApproval: level.codeUserApproval || "N/A",
-          EmployeeId: level.EmployeeId || "N/A",
-          EmployeeName: level.EmployeeName || "N/A",
-          IsSelected: level.IsSelected || "N/A",
-        })) || [],
+        levelApproval:
+          data.levelApproval?.map((level) => ({
+            Id: level.Id || 1,
+            level: level.level || 1,
+            status: level.status || "pending",
+            reasonReject: level.reasonReject || "N/A",
+            approveTime: level.approveTime || new Date().toISOString(),
+            codeUserApproval: level.codeUserApproval || "N/A",
+            EmployeeId: level.EmployeeId || "N/A",
+            EmployeeName: level.EmployeeName || "N/A",
+            IsSelected: level.IsSelected || "N/A",
+          })) || [],
       };
 
       const mfgRequest = new MfgReplaceRecruitmentRequest(mfgRequestData);
       await mfgRequest.save({ session: sessionStart });
+     
+      if (data.replacement && data.replacement.length > 0) {
+        const ignoreEmployeesData = data.replacement.map(employee => ({
+          code: employee.code,
+          name: employee.name,
+          division: employee.division,
+          section: employee.section,
+          position: employee.position,
+          grade: employee.grade,
+          entryDate: employee.entryDate,
+          actualLeaveDate: employee.actualLeaveDate,
+          note: employee.note || `Thuộc yêu cầu tuyển dụng thay thế: ${requestRecruitment._id}`
+        }));
 
-      // 3. Tạo ApprovalHistory cho level đầu tiên (nếu có)
+        await IgnoreEmployees.insertMany(ignoreEmployeesData, { session: sessionStart });
+      }
       if (data.levelApproval && data.levelApproval.length > 0) {
         const firstLevel = data.levelApproval[0];
         const approvalHistoryData = {
           requestId: requestRecruitment._id,
           approvedBy: {
-            userId: firstLevel.codeUserApproval || firstLevel.EmployeeId || "N/A",
+            userId:
+              firstLevel.codeUserApproval || firstLevel.EmployeeId || "N/A",
             name: firstLevel.EmployeeName || "N/A",
             code: firstLevel.EmployeeId || "N/A",
           },
@@ -155,11 +206,8 @@ class MfgReplaceRecuitmentController {
         const approvalHistory = new ApprovalHistory(approvalHistoryData);
         await approvalHistory.save({ session: sessionStart });
       }
-
-      // Commit transaction
       await this.uow.commit();
 
-      // Trả về kết quả
       return response.status(201).json({
         status: 201,
         message: "Yêu cầu tuyển dụng thay thế MFG đã được tạo thành công",
@@ -194,19 +242,22 @@ class MfgReplaceRecuitmentController {
       const endDate = req.query.endDate as string;
       // Tạo filter
       const filter: any = {};
-      
+
       if (search) {
         filter.$or = [
-          { "division": { $regex: search, $options: "i" } },
-          { "department": { $regex: search, $options: "i" } },
-          { "position": { $regex: search, $options: "i" } },
+          { division: { $regex: search, $options: "i" } },
+          { department: { $regex: search, $options: "i" } },
+          { position: { $regex: search, $options: "i" } },
         ];
       }
-      
+
       if (startDate && endDate) {
-        filter.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+        filter.createdAt = {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate),
+        };
       }
-      
+
       // Lấy danh sách yêu cầu tuyển dụng với phân trang
       const options = {
         page,
@@ -218,12 +269,12 @@ class MfgReplaceRecuitmentController {
           },
         ],
       };
-      
+
       const result = await (MfgReplaceRecruitmentRequest as any).paginate(
         filter,
         options
       );
-      
+
       return response.status(200).json({
         status: 200,
         message: "Lấy danh sách yêu cầu tuyển dụng thay thế MFG thành công",
@@ -242,7 +293,8 @@ class MfgReplaceRecuitmentController {
     } catch (error: any) {
       return response.status(500).json({
         status: 500,
-        message: "Đã xảy ra lỗi khi lấy danh sách yêu cầu tuyển dụng thay thế MFG",
+        message:
+          "Đã xảy ra lỗi khi lấy danh sách yêu cầu tuyển dụng thay thế MFG",
         error: error.message,
       });
     }
@@ -252,12 +304,12 @@ class MfgReplaceRecuitmentController {
   @HttpCode(200)
   async getRequestById(@Param("id") id: string, @Res() response: Response) {
     try {
-      console.log(1,id)
+      console.log(1, id);
       // Lấy thông tin chi tiết yêu cầu tuyển dụng
-      const mfgRequest = await MfgReplaceRecruitmentRequest.findOne({ 
-        requestId: new mongoose.Types.ObjectId(id) 
+      const mfgRequest = await MfgReplaceRecruitmentRequest.findOne({
+        requestId: new mongoose.Types.ObjectId(id),
       }).populate("requestId");
-        
+
       if (!mfgRequest) {
         return response.status(404).json({
           status: 404,
@@ -265,7 +317,7 @@ class MfgReplaceRecuitmentController {
           data: null,
         });
       }
-      
+
       // Lấy lịch sử phê duyệt
       const approvalHistory = await ApprovalHistory.find({
         requestId: id,
@@ -283,7 +335,8 @@ class MfgReplaceRecuitmentController {
     } catch (error: any) {
       return response.status(500).json({
         status: 500,
-        message: "Đã xảy ra lỗi khi lấy thông tin yêu cầu tuyển dụng thay thế MFG",
+        message:
+          "Đã xảy ra lỗi khi lấy thông tin yêu cầu tuyển dụng thay thế MFG",
         error: error.message,
       });
     }
@@ -309,17 +362,19 @@ class MfgReplaceRecuitmentController {
         return response.status(404).json({
           status: 404,
           message: "Không tìm thấy yêu cầu tuyển dụng",
-          data: null
+          data: null,
         });
       }
 
       // 2. Kiểm tra yêu cầu tuyển dụng MFG có tồn tại không
-      const existingMfgRequest = await MfgReplaceRecruitmentRequest.findOne({ requestId: id });
+      const existingMfgRequest = await MfgReplaceRecruitmentRequest.findOne({
+        requestId: id,
+      });
       if (!existingMfgRequest) {
         return response.status(404).json({
           status: 404,
           message: "Không tìm thấy yêu cầu tuyển dụng thay thế MFG",
-          data: null
+          data: null,
         });
       }
 
@@ -327,33 +382,42 @@ class MfgReplaceRecuitmentController {
       if (existingRequest.status !== "pending") {
         return response.status(400).json({
           status: 400,
-          message: "Không thể sửa yêu cầu đã được phê duyệt hoàn tất hoặc đã bị từ chối",
-          data: null
+          message:
+            "Không thể sửa yêu cầu đã được phê duyệt hoàn tất hoặc đã bị từ chối",
+          data: null,
         });
       }
 
       // 4. Cập nhật thông tin yêu cầu tuyển dụng (nếu có)
       if (data.nameForm) existingRequest.nameForm = data.nameForm;
-      
+
       // Kiểm tra và cập nhật thông tin người tạo nếu có
       if (existingRequest.createdBy) {
-        if (data.RequesterName) existingRequest.createdBy.RequesterName = data.RequesterName;
-        if (data.RequesterCode) existingRequest.createdBy.RequesterCode = data.RequesterCode;
-        if (data.RequesterPosition) existingRequest.createdBy.RequesterPosition = data.RequesterPosition;
-        if (data.RequesterSection) existingRequest.createdBy.RequesterSection = data.RequesterSection;
+        if (data.RequesterName)
+          existingRequest.createdBy.RequesterName = data.RequesterName;
+        if (data.RequesterCode)
+          existingRequest.createdBy.RequesterCode = data.RequesterCode;
+        if (data.RequesterPosition)
+          existingRequest.createdBy.RequesterPosition = data.RequesterPosition;
+        if (data.RequesterSection)
+          existingRequest.createdBy.RequesterSection = data.RequesterSection;
       }
 
       // 5. Cập nhật yêu cầu MFG (nếu có)
       if (data.year !== undefined) existingMfgRequest.year = data.year;
       if (data.month !== undefined) existingMfgRequest.month = data.month;
       if (data.recCode !== undefined) existingMfgRequest.recCode = data.recCode;
-      if (data.division !== undefined) existingMfgRequest.division = data.division;
-      if (data.department !== undefined) existingMfgRequest.department = data.department;
-      if (data.position !== undefined) existingMfgRequest.position = data.position;
+      if (data.division !== undefined)
+        existingMfgRequest.division = data.division;
+      if (data.department !== undefined)
+        existingMfgRequest.department = data.department;
+      if (data.position !== undefined)
+        existingMfgRequest.position = data.position;
       if (data.grade !== undefined) existingMfgRequest.grade = data.grade;
-      if (data.quantity !== undefined) existingMfgRequest.quantity = data.quantity;
+      if (data.quantity !== undefined)
+        existingMfgRequest.quantity = data.quantity;
       if (data.status !== undefined) existingMfgRequest.status = data.status;
-      
+
       if (data.replacement && data.replacement.length > 0) {
         existingMfgRequest.replacement = data.replacement;
       }
@@ -407,97 +471,115 @@ class MfgReplaceRecuitmentController {
 
   @Post("/approve")
   @HttpCode(200)
-  async approveRequest(@Body() data: IApprovalRequest, @Res() response: Response) {
+  async approveRequest(
+    @Body() data: IApprovalRequest,
+    @Res() response: Response
+  ) {
     try {
       // Bắt đầu transaction
       const sessionStart: any = await this.uow.start();
       if (!sessionStart) {
         throw new Error("Session failed to start");
       }
-      
+
       // 1. Kiểm tra yêu cầu tuyển dụng có tồn tại không
-      const requestRecruitment = await RequestRecruitment.findById(data.requestId);
+      const requestRecruitment = await RequestRecruitment.findById(
+        data.requestId
+      );
       if (!requestRecruitment) {
         return response.status(404).json({
           status: 404,
           message: "Không tìm thấy yêu cầu tuyển dụng",
-          data: null
+          data: null,
         });
       }
-      
+
       // 2. Kiểm tra yêu cầu tuyển dụng MFG có tồn tại không
-      const mfgRequest = await MfgReplaceRecruitmentRequest.findById(data.mfgRequestId);
+      const mfgRequest = await MfgReplaceRecruitmentRequest.findById(
+        data.mfgRequestId
+      );
       if (!mfgRequest) {
         return response.status(404).json({
           status: 404,
           message: "Không tìm thấy yêu cầu tuyển dụng thay thế MFG",
-          data: null
+          data: null,
         });
       }
-      
+
       // 3. Kiểm tra cấp phê duyệt hiện tại
       const currentLevelIndex = mfgRequest.levelApproval.findIndex(
-        level => level.level === data.level
+        (level) => level.level === data.level
       );
-      
+
       if (currentLevelIndex === -1) {
         return response.status(400).json({
           status: 400,
           message: "Cấp phê duyệt không hợp lệ",
-          data: null
+          data: null,
         });
       }
-      
+
       // 4. Cập nhật trạng thái phê duyệt trong levelApproval
       mfgRequest.levelApproval[currentLevelIndex].status = data.status;
-      mfgRequest.levelApproval[currentLevelIndex].reasonReject = data.reasonReject || '';
-      mfgRequest.levelApproval[currentLevelIndex].approveTime = new Date().toISOString();
-      mfgRequest.levelApproval[currentLevelIndex].codeUserApproval = data.approverCode;
+      mfgRequest.levelApproval[currentLevelIndex].reasonReject =
+        data.reasonReject || "";
+      mfgRequest.levelApproval[currentLevelIndex].approveTime =
+        new Date().toISOString();
+      mfgRequest.levelApproval[currentLevelIndex].codeUserApproval =
+        data.approverCode;
       mfgRequest.levelApproval[currentLevelIndex].EmployeeId = data.approverId;
-      mfgRequest.levelApproval[currentLevelIndex].EmployeeName = data.approverName;
-      
+      mfgRequest.levelApproval[currentLevelIndex].EmployeeName =
+        data.approverName;
+
       // Cập nhật người được chọn để phê duyệt ở cấp tiếp theo (nếu có)
       if (data.nextApproverCode) {
-        mfgRequest.levelApproval[currentLevelIndex].IsSelected = data.nextApproverCode;
+        mfgRequest.levelApproval[currentLevelIndex].IsSelected =
+          data.nextApproverCode;
       }
-      
+
       // 5. Cập nhật trạng thái của yêu cầu tuyển dụng
-      if (data.status === 'rejected') {
+      if (data.status === "rejected") {
         // Nếu từ chối, cập nhật trạng thái của yêu cầu thành rejected
-        requestRecruitment.status = 'rejected';
-      } else if (data.status === 'approved') {
+        requestRecruitment.status = "rejected";
+      } else if (data.status === "approved") {
         // Kiểm tra xem đây có phải là cấp cuối cùng không
-        const maxLevel = Math.max(...mfgRequest.levelApproval.map(level => level.level || 0));
+        const maxLevel = Math.max(
+          ...mfgRequest.levelApproval.map((level) => level.level || 0)
+        );
         const isLastLevel = data.level === maxLevel;
-        
+
         if (isLastLevel) {
           // Nếu là cấp cuối cùng, cập nhật trạng thái thành completed
-          requestRecruitment.status = 'approved';
+          requestRecruitment.status = "approved";
           // Cập nhật trạng thái MFG request thành true (đã phê duyệt)
           mfgRequest.status = true;
         } else {
           // Nếu không phải cấp cuối cùng, cập nhật trạng thái thành pending
-          requestRecruitment.status = 'pending';
-          
+          requestRecruitment.status = "pending";
+
           // Tìm cấp phê duyệt tiếp theo
           const nextLevel = data.level + 1;
           const nextLevelIndex = mfgRequest.levelApproval.findIndex(
-            level => level.level === nextLevel
+            (level) => level.level === nextLevel
           );
-          
+
           if (nextLevelIndex !== -1) {
             // Nếu người phê duyệt hiện tại đã chọn người phê duyệt tiếp theo
             if (data.nextApproverCode && data.nextApproverName) {
               // Cập nhật thông tin người phê duyệt cho cấp tiếp theo
-              mfgRequest.levelApproval[nextLevelIndex].EmployeeId = data.nextApproverCode;
-              mfgRequest.levelApproval[nextLevelIndex].EmployeeName = data.nextApproverName;
-            } 
+              mfgRequest.levelApproval[nextLevelIndex].EmployeeId =
+                data.nextApproverCode;
+              mfgRequest.levelApproval[nextLevelIndex].EmployeeName =
+                data.nextApproverName;
+            }
             // Nếu cấp trước đã chọn người phê duyệt (thông qua IsSelected)
             else if (mfgRequest.levelApproval[currentLevelIndex].IsSelected) {
-              const selectedApproverCode = mfgRequest.levelApproval[currentLevelIndex].IsSelected;
-              
+              const selectedApproverCode =
+                mfgRequest.levelApproval[currentLevelIndex].IsSelected;
+
               // Cập nhật thông tin người được chọn cho cấp tiếp theo
-              mfgRequest.levelApproval[nextLevelIndex].EmployeeId = selectedApproverCode;
+              mfgRequest.levelApproval[nextLevelIndex].EmployeeId =
+                selectedApproverCode;
             }
           }
         }
@@ -518,12 +600,14 @@ class MfgReplaceRecuitmentController {
         level: data.level,
         status: data.status,
         approvedAt: new Date(),
-        reasonReject: data.reasonReject || '',
-        comment: data.comment || '',
-        nextApprover: data.nextApproverCode ? {
-          code: data.nextApproverCode,
-          name: data.nextApproverName
-        } : undefined
+        reasonReject: data.reasonReject || "",
+        comment: data.comment || "",
+        nextApprover: data.nextApproverCode
+          ? {
+              code: data.nextApproverCode,
+              name: data.nextApproverName,
+            }
+          : undefined,
       };
 
       const approvalHistory = new ApprovalHistory(approvalHistoryData);
@@ -535,19 +619,25 @@ class MfgReplaceRecuitmentController {
       // Trả về kết quả
       return response.status(200).json({
         status: 200,
-        message: `Yêu cầu tuyển dụng thay thế MFG đã được ${data.status === 'approved' ? 'phê duyệt' : 'từ chối'} thành công`,
+        message: `Yêu cầu tuyển dụng thay thế MFG đã được ${data.status === "approved" ? "phê duyệt" : "từ chối"} thành công`,
         data: {
           requestId: requestRecruitment._id,
           status: requestRecruitment.status,
           approvalLevel: data.level,
           approvalStatus: data.status,
-          isLastLevel: data.level === Math.max(...mfgRequest.levelApproval.map(level => level.level || 0)),
-          nextApprover: data.nextApproverCode ? {
-            code: data.nextApproverCode,
-            name: data.nextApproverName
-          } : undefined,
-          updatedAt: new Date()
-        }
+          isLastLevel:
+            data.level ===
+            Math.max(
+              ...mfgRequest.levelApproval.map((level) => level.level || 0)
+            ),
+          nextApprover: data.nextApproverCode
+            ? {
+                code: data.nextApproverCode,
+                name: data.nextApproverName,
+              }
+            : undefined,
+          updatedAt: new Date(),
+        },
       });
     } catch (error: any) {
       console.error("Error occurred, rolling back", error);
@@ -556,7 +646,7 @@ class MfgReplaceRecuitmentController {
       return response.status(500).json({
         status: 500,
         message: "Đã xảy ra lỗi khi phê duyệt yêu cầu tuyển dụng thay thế MFG",
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -581,54 +671,69 @@ class MfgReplaceRecuitmentController {
         return response.status(404).json({
           status: 404,
           message: "Không tìm thấy yêu cầu tuyển dụng",
-          data: null
+          data: null,
         });
       }
 
       // 2. Kiểm tra yêu cầu tuyển dụng MFG có tồn tại không
-      const existingMfgRequest = await MfgReplaceRecruitmentRequest.findOne({ requestId: id });
+      const existingMfgRequest = await MfgReplaceRecruitmentRequest.findOne({
+        requestId: id,
+      });
       if (!existingMfgRequest) {
         return response.status(404).json({
           status: 404,
           message: "Không tìm thấy yêu cầu tuyển dụng thay thế MFG",
-          data: null
+          data: null,
         });
       }
 
       // 3. Cập nhật thông tin yêu cầu tuyển dụng
       existingRequest.status = "pending"; // Reset về trạng thái chờ phê duyệt
-      existingRequest.nameForm = data.nameForm || { title: "Yêu cầu tuyển dụng thay thế MFG" };
-      
+      existingRequest.nameForm = data.nameForm || {
+        title: "Yêu cầu tuyển dụng thay thế MFG",
+      };
+
       // Kiểm tra và cập nhật thông tin người tạo nếu có
       if (existingRequest.createdBy) {
-        if (data.RequesterName) existingRequest.createdBy.RequesterName = data.RequesterName;
-        if (data.RequesterCode) existingRequest.createdBy.RequesterCode = data.RequesterCode;
-        if (data.RequesterPosition) existingRequest.createdBy.RequesterPosition = data.RequesterPosition;
-        if (data.RequesterSection) existingRequest.createdBy.RequesterSection = data.RequesterSection;
+        if (data.RequesterName)
+          existingRequest.createdBy.RequesterName = data.RequesterName;
+        if (data.RequesterCode)
+          existingRequest.createdBy.RequesterCode = data.RequesterCode;
+        if (data.RequesterPosition)
+          existingRequest.createdBy.RequesterPosition = data.RequesterPosition;
+        if (data.RequesterSection)
+          existingRequest.createdBy.RequesterSection = data.RequesterSection;
       }
 
       // 4. Cập nhật yêu cầu MFG
       if (data.year !== undefined) existingMfgRequest.year = data.year;
       if (data.month !== undefined) existingMfgRequest.month = data.month;
       if (data.recCode !== undefined) existingMfgRequest.recCode = data.recCode;
-      if (data.division !== undefined) existingMfgRequest.division = data.division;
-      if (data.department !== undefined) existingMfgRequest.department = data.department;
-      if (data.position !== undefined) existingMfgRequest.position = data.position;
+      if (data.division !== undefined)
+        existingMfgRequest.division = data.division;
+      if (data.department !== undefined)
+        existingMfgRequest.department = data.department;
+      if (data.position !== undefined)
+        existingMfgRequest.position = data.position;
       if (data.grade !== undefined) existingMfgRequest.grade = data.grade;
-      if (data.quantity !== undefined) existingMfgRequest.quantity = data.quantity;
+      if (data.quantity !== undefined)
+        existingMfgRequest.quantity = data.quantity;
       existingMfgRequest.status = false; // Reset về trạng thái chưa phê duyệt
-      
+
       if (data.replacement && data.replacement.length > 0) {
         existingMfgRequest.replacement = data.replacement;
       }
-      
+
       // 5. Reset levelApproval đúng cách với Mongoose
       if (data.levelApproval && data.levelApproval.length > 0) {
         // Xóa tất cả cấp phê duyệt hiện tại
-        existingMfgRequest.levelApproval.splice(0, existingMfgRequest.levelApproval.length);
-        
+        existingMfgRequest.levelApproval.splice(
+          0,
+          existingMfgRequest.levelApproval.length
+        );
+
         // Thêm từng cấp phê duyệt mới
-        data.levelApproval.forEach(level => {
+        data.levelApproval.forEach((level) => {
           existingMfgRequest.levelApproval.push({
             Id: level.Id || 1,
             level: level.level || 1,
@@ -648,7 +753,10 @@ class MfgReplaceRecuitmentController {
       await existingMfgRequest.save({ session: sessionStart });
 
       // 7. Xóa tất cả lịch sử phê duyệt cũ
-      await ApprovalHistory.deleteMany({ requestId: id }, { session: sessionStart });
+      await ApprovalHistory.deleteMany(
+        { requestId: id },
+        { session: sessionStart }
+      );
 
       // 8. Tạo lịch sử phê duyệt mới cho cấp đầu tiên (nếu có)
       if (data.levelApproval && data.levelApproval.length > 0) {
@@ -656,7 +764,8 @@ class MfgReplaceRecuitmentController {
         const approvalHistoryData = {
           requestId: id,
           approvedBy: {
-            userId: firstLevel.codeUserApproval || firstLevel.EmployeeId || "N/A",
+            userId:
+              firstLevel.codeUserApproval || firstLevel.EmployeeId || "N/A",
             name: firstLevel.EmployeeName || "N/A",
             code: firstLevel.EmployeeId || "N/A",
           },
@@ -713,7 +822,7 @@ class MfgReplaceRecuitmentController {
         return response.status(404).json({
           status: 404,
           message: "Không tìm thấy yêu cầu tuyển dụng",
-          data: null
+          data: null,
         });
       }
 
@@ -722,14 +831,23 @@ class MfgReplaceRecuitmentController {
         return response.status(400).json({
           status: 400,
           message: "Chỉ có thể xóa các yêu cầu đang chờ phê duyệt",
-          data: null
+          data: null,
         });
       }
 
       // 3. Xóa các bản ghi liên quan
-      await MfgReplaceRecruitmentRequest.deleteOne({ requestId: id }, { session: sessionStart });
-      await ApprovalHistory.deleteMany({ requestId: id }, { session: sessionStart });
-      await RequestRecruitment.deleteOne({ _id: id }, { session: sessionStart });
+      await MfgReplaceRecruitmentRequest.deleteOne(
+        { requestId: id },
+        { session: sessionStart }
+      );
+      await ApprovalHistory.deleteMany(
+        { requestId: id },
+        { session: sessionStart }
+      );
+      await RequestRecruitment.deleteOne(
+        { _id: id },
+        { session: sessionStart }
+      );
 
       // Commit transaction
       await this.uow.commit();
@@ -737,7 +855,7 @@ class MfgReplaceRecuitmentController {
       return response.status(200).json({
         status: 200,
         message: "Xóa yêu cầu tuyển dụng thay thế MFG thành công",
-        data: null
+        data: null,
       });
     } catch (error: any) {
       console.error("Error occurred, rolling back", error);
@@ -746,14 +864,18 @@ class MfgReplaceRecuitmentController {
       return response.status(500).json({
         status: 500,
         message: "Đã xảy ra lỗi khi xóa yêu cầu tuyển dụng thay thế MFG",
-        error: error.message
+        error: error.message,
       });
     }
   }
 
   @Get("/user/:userId")
   @HttpCode(200)
-  async getUserRequests(@Param("userId") userId: string, @Req() req: Request, @Res() response: Response) {
+  async getUserRequests(
+    @Param("userId") userId: string,
+    @Req() req: Request,
+    @Res() response: Response
+  ) {
     try {
       // Lấy các tham số phân trang và lọc
       const page = parseInt(req.query.page as string) || 1;
@@ -761,46 +883,44 @@ class MfgReplaceRecuitmentController {
       const status = req.query.status as string;
       const startDate = req.query.startDate as string;
       const endDate = req.query.endDate as string;
-      const sortBy = req.query.sortBy as string || 'createdAt';
-      const sortOrder = req.query.sortOrder as string || 'desc';
+      const sortBy = (req.query.sortBy as string) || "createdAt";
+      const sortOrder = (req.query.sortOrder as string) || "desc";
 
       // Tìm tất cả RequestRecruitment của người dùng với formType = MFGREPLACE
       const filter = {
-        'createdBy.userId': userId,
-        'formType': 'MFGREPLACE'
+        "createdBy.userId": userId,
+        formType: "MFGREPLACE",
       } as any;
-      
+
       // Thêm các điều kiện lọc khác
-      if (status && status !== 'all') {
-        filter['status'] = status;
+      if (status && status !== "all") {
+        filter["status"] = status;
       }
-      
+
       if (startDate && endDate) {
-        filter['createdAt'] = { 
-          $gte: new Date(startDate), 
-          $lte: new Date(endDate) 
+        filter["createdAt"] = {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate),
         };
       }
 
       // Xây dựng options cho phân trang
       const sortOption: any = {};
-      sortOption[sortBy] = sortOrder === 'asc' ? 1 : -1;
+      sortOption[sortBy] = sortOrder === "asc" ? 1 : -1;
 
       // Thực hiện query với phân trang
-      const result = await (RequestRecruitment as any).paginate(
-        filter,
-        {
-          page,
-          limit,
-          sort: sortOption
-        }
-      );
+      const result = await (RequestRecruitment as any).paginate(filter, {
+        page,
+        limit,
+        sort: sortOption,
+      });
 
       // Nếu không tìm thấy yêu cầu nào, trả về mảng rỗng
       if (!result.docs || result.docs.length === 0) {
         return response.status(200).json({
           status: 200,
-          message: "Không tìm thấy yêu cầu tuyển dụng thay thế MFG cho người dùng này",
+          message:
+            "Không tìm thấy yêu cầu tuyển dụng thay thế MFG cho người dùng này",
           data: [],
           pagination: {
             totalDocs: 0,
@@ -826,12 +946,12 @@ class MfgReplaceRecuitmentController {
     } catch (error: any) {
       return response.status(500).json({
         status: 500,
-        message: "Đã xảy ra lỗi khi lấy danh sách yêu cầu tuyển dụng thay thế MFG",
+        message:
+          "Đã xảy ra lỗi khi lấy danh sách yêu cầu tuyển dụng thay thế MFG",
         error: error.message,
       });
     }
   }
-
 }
 
-export default MfgReplaceRecuitmentController;  
+export default MfgReplaceRecuitmentController;

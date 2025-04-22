@@ -1,8 +1,13 @@
 import CompanyStructure from "../../models/models-project/companyStructure.model";
 import { sequelizeSql } from "../../config/ezV4Db";
-import { injectable } from "inversify";
+import { inject, injectable } from "inversify";
+import ResignInfoEzv4 from "../service-Ezv4/resign";
 @injectable()
 export class CompanySyncService {
+  private resignInfoEzv4: ResignInfoEzv4;
+  constructor(@inject(ResignInfoEzv4) resignInfoEzv4: ResignInfoEzv4) {
+    this.resignInfoEzv4 = resignInfoEzv4;
+  }
   async syncCompanyStructureFromSQL() {
     try {
       const [results] = await sequelizeSql.query(`
@@ -39,7 +44,9 @@ export class CompanySyncService {
     }
   }
   async findByName(name: string) {
-    return await CompanyStructure.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
+    return await CompanyStructure.findOne({
+      name: { $regex: new RegExp(`^${name}$`, "i") },
+    });
   }
   async findById(id: string) {
     return await CompanyStructure.findOne({ _id: id });
@@ -63,7 +70,7 @@ export class CompanySyncService {
     }
     return result;
   }
-  async getOneChild(id: number):Promise<any> {
+  async getOneChild(id: number): Promise<any> {
     const children = await CompanyStructure.find({ parentId: id });
     const result = [...children];
     return result;
@@ -79,8 +86,37 @@ export class CompanySyncService {
       children,
     };
   }
-  async getAllDepartment({ page = 1, limit = 10}: { page?: number, limit?: number}) {
+  async getAllDepartment({
+    page = 1,
+    limit = 10,
+  }: {
+    page?: number;
+    limit?: number;
+  }) {
     const query: any = {};
+    const result = await CompanyStructure.paginate(query, {
+      page,
+      limit,
+      sort: { orderId: 1 },
+    });
+    return result;
+  }
+  async getAllDepartmentVersion2({
+    page = 1,
+    limit = 10,
+    search,
+  }: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }) {
+    const query: any = {};
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { code: { $regex: search, $options: "i" } },
+      ];
+    }
     const result = await CompanyStructure.paginate(query, {
       page,
       limit,
@@ -97,4 +133,62 @@ export class CompanySyncService {
       children,
     };
   }
+  async getInfoResignMfg({
+    page,
+    limit,
+    search,
+    typeFilter,
+    ignoreCodes = []
+  }: {
+    page: number;
+    limit: number;
+    search: string;
+    typeFilter: string;
+    ignoreCodes?: string[];
+  }) {
+    try {
+      let deptIds: string[] = [];
+  
+      // Xử lý từng loại filter
+      if (typeFilter === "mfg1") {
+        const childIds = await this.resignInfoEzv4.getAllChildDepartments("11");
+        deptIds = ["11", ...childIds];
+      } else if (typeFilter === "mfg2") {
+        const childIds = await this.resignInfoEzv4.getAllChildDepartments("12");
+        deptIds = ["12", ...childIds];
+      } else if (typeFilter === "all") {
+        const [childIds1, childIds2] = await Promise.all([
+          this.resignInfoEzv4.getAllChildDepartments("11"),
+          this.resignInfoEzv4.getAllChildDepartments("12")
+        ]);
+        deptIds = ["11", ...childIds1, "12", ...childIds2];
+      } else {
+        return {
+          status: 400,
+          message: "Loại typeFilter không hợp lệ",
+        };
+      }
+      const result = await this.resignInfoEzv4.getResignInfoOptimized({
+        deptIds,
+        page,
+        limit,
+        search,
+        ignoreCodes
+      });
+      return {
+        status: 200,
+        message: "Thành công",
+        data: result.data,
+        pagination: result.pagination
+      };
+    } catch (error: any) {
+      console.error("Error in getInfoResignMfg:", error);
+      return {
+        status: 500,
+        message: "Lỗi xử lý dữ liệu",
+        error: error.message,
+      };
+    }
+  }
+  
 }

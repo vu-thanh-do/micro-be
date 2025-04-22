@@ -100,6 +100,7 @@ export class PendingApprovalController {
   ) {
     const { page = 1, limit = 10 } = query;
     try {
+      console.log(userId,'userId')
       const result = await this.pendingService.getAllForUser(
         userId,
         page,
