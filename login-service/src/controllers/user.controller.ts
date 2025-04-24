@@ -169,7 +169,6 @@ export const UserController = {
     }
   },
 
-  // Thêm user mới
   createUser: async (req: AuthRequest, res: Response): Promise<any> => {
     try {
       const { 
@@ -177,12 +176,11 @@ export const UserController = {
         email, 
         username, 
         password, 
-        roleId = "4F2BF40B-52D5-41E5-9CC2-B8251B436F4E", // Mặc định là role thường
+        roleId = "4F2BF40B-52D5-41E5-9CC2-B8251B436F4E", 
         avatar = "image/male.jpg",
         code
       } = req.body;
 
-      // Kiểm tra các trường bắt buộc
       if (!employeeCode || !email || !username || !password) {
         return res.status(400).json({
           status: 400,
@@ -191,7 +189,6 @@ export const UserController = {
         });
       }
 
-      // Kiểm tra xem user đã tồn tại chưa
       const normalizedCode = employeeCode.toLowerCase().replace(/^(dmvn|vn)/g, "");
       const existingUser = await Users.findOne({
         where: { EmployeeCode: normalizedCode }
@@ -205,10 +202,8 @@ export const UserController = {
         });
       }
 
-      // Mã hóa mật khẩu
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Tạo user mới
       const newUser = await Users.create({
         UserId: uuidv4(),
         EmployeeCode: normalizedCode,
@@ -223,7 +218,6 @@ export const UserController = {
         CreatedBy: req.user?.UserId || "system"
       });
 
-      // Xóa thông tin nhạy cảm trước khi trả về
       const userData = {
         UserId: newUser.UserId,
         EmployeeCode: newUser.EmployeeCode,
@@ -234,7 +228,6 @@ export const UserController = {
         CreatedDate: newUser.CreatedDate
       };
 
-      // Log hành động tạo user
       console.log(`User created: ${userData.UserId} by ${req.user?.UserId || "system"}`);
 
       return res.status(201).json({
@@ -252,7 +245,6 @@ export const UserController = {
     }
   },
 
-  // Cập nhật thông tin user
   updateUser: async (req: AuthRequest, res: Response): Promise<any> => {
     try {
       const { id } = req.params;
@@ -265,7 +257,6 @@ export const UserController = {
         code
       } = req.body;
 
-      // Tìm user cần cập nhật
       const user = await Users.findByPk(id);
       
       if (!user) {
@@ -276,7 +267,6 @@ export const UserController = {
         });
       }
 
-      // Chuẩn bị dữ liệu cập nhật
       const updateData: any = {};
       
       if (email) updateData.Email = email;
@@ -285,27 +275,21 @@ export const UserController = {
       if (avatar) updateData.Avatar = avatar;
       if (code) updateData.Code = code;
       
-      // Nếu có mật khẩu mới, thì mã hóa và cập nhật
       if (password) {
         updateData.Password = await bcrypt.hash(password, 10);
       }
       
-      // Thêm thông tin cập nhật
       updateData.UpdatedDate = new Date();
       updateData.UpdatedBy = req.user?.UserId || "system";
 
-      // Thực hiện cập nhật
       await user.update(updateData);
 
-      // Nếu có dữ liệu trong Redis, xóa để cập nhật sau
       await redis.del(`user:${id}`);
 
-      // Lấy dữ liệu đã cập nhật
       const updatedUser = await Users.findByPk(id, {
         attributes: { exclude: ['Password', 'RefreshToken'] }
       });
 
-      // Log hành động cập nhật
       console.log(`User updated: ${id} by ${req.user?.UserId || "system"}`);
 
       return res.status(200).json({
@@ -323,12 +307,9 @@ export const UserController = {
     }
   },
 
-  // Xóa người dùng
   deleteUser: async (req: AuthRequest, res: Response): Promise<any> => {
     try {
       const { id } = req.params;
-      
-      // Tìm user cần xóa
       const user = await Users.findByPk(id);
       
       if (!user) {
@@ -339,13 +320,10 @@ export const UserController = {
         });
       }
 
-      // Thực hiện xóa
       await user.destroy();
 
-      // Xóa cache Redis
       await redis.del(`user:${id}`);
 
-      // Log hành động xóa
       console.log(`User deleted: ${id} by ${req.user?.UserId || "system"}`);
 
       return res.status(200).json({
