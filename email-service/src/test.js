@@ -123,6 +123,74 @@ app.post('/api/login', async (req, res) => {
     });
   }
 });
+app.post('/auth/create-user', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.AUTH_SERVICE}/api/create-user`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 // 10 seconds timeout
+    });
+
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Login Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to connect to authentication service",
+      data: null
+    });
+  }
+});
+app.put('/auth/update-user/:id', async (req, res) => {
+  try {
+    const {id} = req.params
+    const response = await fetch(`${SERVICES.AUTH_SERVICE}/api/update-user/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body),
+      timeout: 10000 
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Login Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to connect to authentication service",
+      data: null
+    });
+  }
+});
+app.delete('/api/delete-user/:id', async (req, res) => {
+  try {
+    const {id} = req.params
+    const response = await fetch(`${SERVICES.AUTH_SERVICE}/api/delete-user/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000 
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Login Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to connect to authentication service",
+      data: null
+    });
+  }
+});
 // Get-me route
 app.get('/auth/get-me', createServiceProxy(
   SERVICES.AUTH_SERVICE,
@@ -185,17 +253,49 @@ app.get('/api/get-role-by-id/:id', createServiceProxy(
   10000
 ));
 
-app.post('/role/create-role', createServiceProxy(
-  SERVICES.AUTH_SERVICE,
-  { '^/role/create-role': '/api/create-role' },
-  10000
-));
+app.post('/api/create-role',async(req,res)=>{
+try {
+    const response = await fetch(`${SERVICES.AUTH_SERVICE}/api/create-role`,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify(req.body)
+    })
+    const data = await response.json(); 
+    return res.status(response.status).json(data);
+} catch (error) {
+  console.error('Create Role Error:', error);
+  return res.status(500).json({
+    code: 500,
+      status: "Error",
+      message: "Failed to create role",
+      data: null
+    });
+  }
+});
 
-app.put('/role/update-role/:id', createServiceProxy(
-  SERVICES.AUTH_SERVICE,
-  { '^/role/update-role/:id': '/api/update-role/:id' },
-  10000
-));
+app.put('/api/update-role/:id', async(req,res)=>{
+  try {
+    const response = await fetch(`${SERVICES.AUTH_SERVICE}/api/update-role/${req.params.id}`,{
+      method:'PUT',
+      headers:{
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify(req.body)
+    })
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Update Role Error:', error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to update role",
+      data: null
+    });
+  }
+});
 // logs
 app.get('/logs/get-all-logs', createServiceProxy(
   SERVICES.LOG_SERVICE,
@@ -725,6 +825,15 @@ app.get('/formTemplate/get-name-structure', createServiceProxy(
     '^/formTemplate/get-name-structure': (path, req) => {
       const query = new URLSearchParams(req.query).toString();
       return `/formTemplate/get-name-structure${query ? '?' + query : ''}`;
+    }
+  }
+));
+app.get('/formTemplate/get-by-id/:id', createServiceProxy(
+  SERVICES.FORM_TEMPLATE_SERVICE,
+  {
+    '^/formTemplate/get-by-id/:id': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/formTemplate/get-by-id/${req.params.id}${query ? '?' + query : ''}`;
     }
   }
 ));
