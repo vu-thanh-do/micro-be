@@ -1414,14 +1414,14 @@ class RequestRecruitmentController {
       });
 
       mfgReplaceRequests.forEach((mfgReplace: any) => {
-        console.log(mfgReplace, "mfgReplace");
+    
         detailsMap.set(mfgReplace.requestId.toString(), {
           type: "MFG_REPLACE",
           data: mfgReplace,
         });
       });
       mfgRequests.forEach((mfg: any) => {
-        console.log(mfg, "mfg");
+       
         detailsMap.set(mfg.requestId.toString(), {
           type: "MFG",
           data: mfg,

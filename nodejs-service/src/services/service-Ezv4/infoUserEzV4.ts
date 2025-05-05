@@ -8,15 +8,31 @@ import CompanyStructure from "../../models/models-project/companyStructure.model
 dotenv.config();
 @injectable()
 export class InfoUserEzV4 {
-  private readonly API_GET_INFO_USER_EZV4 = process.env.API_GET_FULL_INFO_USER_EZV4;
+  private readonly API_GET_INFO_USER_EZV4 =
+    process.env.API_GET_FULL_INFO_USER_EZV4;
   getInfoUserFromCode = async (code: string) => {
-    console.log(code)
+    console.log(code);
     try {
-      const { data } = await apiGetInfoUserEzV4.post(`?employeeCode=${code}&includeResign=true`);
+      const { data } = await apiGetInfoUserEzV4.post(
+        `?employeeCode=${code}&includeResign=true`
+      );
       return data;
     } catch (error) {
       console.error("Lỗi khi truy vấn dữ liệu:", error);
       return null;
+    }
+  };
+  getDivHead = async (divisionId: string) => {
+    try {
+      const { data } = await axios.get(
+        `${process.env.API_GET_DIV_HEAD}/?divisionId=${divisionId}`
+      );
+      if (data?.data?.result?.length > 0) {
+        return data?.data?.result;
+      }
+      return [];
+    } catch (error) {
+      return [];
     }
   };
   getDepartmentNames = async (
@@ -26,16 +42,18 @@ export class InfoUserEzV4 {
     teamId?: number,
     groupId?: number
   ) => {
-    const ids = [divisionId, departmentId, sectionId, teamId, groupId].filter(Boolean);
-  
+    const ids = [divisionId, departmentId, sectionId, teamId, groupId].filter(
+      Boolean
+    );
+
     if (ids.length === 0) return {};
-  
+
     const departments = await CompanyStructure.find({ _id: { $in: ids } });
-  
-    const nameMap = new Map(departments.map(dep => [dep._id, dep.name]));
-  
+
+    const nameMap = new Map(departments.map((dep) => [dep._id, dep.name]));
+
     return {
-      divisionName:divisionId ? nameMap.get(divisionId) || null : null,
+      divisionName: divisionId ? nameMap.get(divisionId) || null : null,
       departmentName: departmentId ? nameMap.get(departmentId) || null : null,
       sectionName: sectionId ? nameMap.get(sectionId) || null : null,
       teamName: teamId ? nameMap.get(teamId) || null : null,
@@ -45,7 +63,7 @@ export class InfoUserEzV4 {
   getFullInfoUserFromCode = async (code: string) => {
     try {
       const { data } = await axios.get(this.API_GET_INFO_USER_EZV4!, {
-        params: { employeeId: code }
+        params: { employeeId: code },
       });
       let userInfo = data.data.result || null;
       if (!userInfo) {

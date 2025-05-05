@@ -14,19 +14,32 @@ import mongoose from "mongoose";
 
 // types/formTemplate.type.ts
 export interface ISpecificCodeApprove {
+  _id?: string;
   employeeCode: string;
-  employeeName: string;
-  employeeEmail: string;
+  employeeName?: string;
+  employeeEmail?: string;
+  deptId?: string;
+  deptName?: string;
 }
 
 export interface IExcludeCodeApprove {
+  _id?: string;
   employeeCode: string;
+  employeeName?: string;
+  employeeEmail?: string;
+  deptId?: string;
+  deptName?: string;
 }
   
 export interface ICodeApprovalItem {
   _idCodeApproval: mongoose.Types.ObjectId;
   status: string;
   indexSTT: number;
+  pic?: {
+    employeeCode: string;
+    employeeName: string;
+    employeeEmail: string;
+  };
   specificCodeApprove: ISpecificCodeApprove[];
   excludeCodeApprove: IExcludeCodeApprove[];
 }

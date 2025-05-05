@@ -9,7 +9,6 @@ export class NotificationService extends GenericService<INoti> {
   constructor() {
     super(Notification)
   }
-
   async create(data: INoti, uow: UnitOfWork, session: any) {
     try {
       const notification = new Notification({

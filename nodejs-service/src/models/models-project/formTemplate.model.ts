@@ -10,7 +10,10 @@ const SpecificCodeApproveSchema = new Schema({
 });
 
 const ExcludeCodeApproveSchema = new Schema({
-  employeeCode: String
+  employeeCode: String,
+  employeeName: String, 
+  employeeEmail: String,
+  deptId: String,
 });
 
 const CodeApprovalSchema = new Schema({
@@ -27,8 +30,16 @@ const CodeApprovalSchema = new Schema({
     type: Number,
     required: true
   },
+  pic :{
+    type: {
+      employeeCode: String,
+      employeeName: String,
+      employeeEmail: String,
+    },
+  },
   specificCodeApprove: [SpecificCodeApproveSchema],
-  excludeCodeApprove: [ExcludeCodeApproveSchema]
+  excludeCodeApprove: [ExcludeCodeApproveSchema],
+  listUserApprove: [SpecificCodeApproveSchema]
 });
 
 const FormTemplateSchema = new Schema(

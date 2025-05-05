@@ -15,7 +15,7 @@ export class LanguageService extends GenericService<ILanguage> {
   async getAllGroup(options: any) {
     try {
       let query;
-      console.log(options, "options");
+   
       const newOption = {
         sort: { createdAt: -1 },
         page: options.page,
